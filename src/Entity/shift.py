@@ -1,5 +1,5 @@
 from datetime import date
-from DataObj.person import Person 
+from src.DataObj.person import Person 
 
 class Shift:
     def __init__(self, person, workdate, shift):

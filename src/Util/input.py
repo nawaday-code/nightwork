@@ -1,16 +1,22 @@
 #Access dbからデータを読み込むユーティリティクラス
 import pyodbc
 from datetime import timedelta
-from DataObj.person import *
-from DataObj.member import *
-from Entity.shift import Shift, Shifts
+from src.DataObj.person import *
+from src.DataObj.member import *
+from src.Entity.shift import Shift, Shifts
+
+
+DB_PATH = 'C:\\Users\\unawa\\デスクトップ\\yakinManager\\nightwork\\test勤務表\\shifttable.accdb'
+DB_PASSWORD = '0000'
+
 
 class AccessDBReader:
-#staff全員の情報を取得する
+    @staticmethod
+    #staff全員の情報を取得する
     def get_all_staff_and_skills():
-        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=shifttable.accdb;')
+        conn = pyodbc.connect(f'Driver={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={DB_PATH};PWD={DB_PASSWORD};')
         cursor = conn.cursor()
-        cursor.execute('SELECT uid, id, staffname, status, authority FROM staff')
+        cursor.execute('SELECT uid, id, staffname, status, authority FROM tblStaff')
         rows = cursor.fetchall()
         imutable_info_list = []
         for row in rows:
@@ -20,7 +26,7 @@ class AccessDBReader:
         
         persons = []
         for imutable_info in imutable_info_list_obj.imutable_info_list:
-            cursor.execute('SELECT modalities, status, skill_score FROM tblSkill WHERE uid = ?', imutable_info.uid)
+            cursor.execute(f'SELECT modalities, status, skill_score FROM tblSkill WHERE uid = {imutable_info.uid}')
             rows = cursor.fetchall()
             staff_skills = []
             for row in rows:
@@ -31,12 +37,12 @@ class AccessDBReader:
             persons.append(person)
         member = Member(persons)
         return member
-#staffの勤務情報を取得する
-    
-    
-    def get_shifts(self, member, date):
+
+    @staticmethod
+    #staffの勤務情報を取得する
+    def get_shifts(member, date):
         
-        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=shifttable.accdb;')
+        conn = pyodbc.connect(f'Driver={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={DB_PATH};PWD={DB_PASSWORD};')
         cursor = conn.cursor()
         
         start_date = date.replace(day=1)
@@ -47,7 +53,7 @@ class AccessDBReader:
         
         shifts = []
         for person in member.person_list:
-            cursor.execute('SELECT workdate, shift FROM tblShift WHERE uid = ? AND workdate BETWEEN ? AND ?', (person.uid, start_date, end_date))
+            cursor.execute(f'SELECT workdate, shift FROM tblShift WHERE uid = {person.uid} AND workdate BETWEEN {start_date} AND {end_date}')
             rows = cursor.fetchall()
             date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
             for shift_date in date_range:
@@ -62,5 +68,3 @@ class AccessDBReader:
         # 各Shiftオブジェクトは、特定の日付の特定のPersonのシフト情報を表します。
         # もしPersonがその日にシフトを持っていない場合、Shiftオブジェクトのshift属性はNoneになります。
         return Shifts(shifts)
-
-

@@ -1,4 +1,4 @@
-from person import Person
+from .person import Person
 
 class Member:
     def __init__(self, person_list):
