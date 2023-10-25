@@ -1,3 +1,6 @@
+from datetime import date
+from DataObj.person import Person 
+
 class Shift:
     def __init__(self, person, workdate, shift):
         assert person is None or isinstance(person, Person), "personはNoneまたはPerson型でなければなりません"
