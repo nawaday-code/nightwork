@@ -29,6 +29,10 @@ class Shifts:
         assert all(isinstance(shift, Shift) for shift in shift_list), "shift_listはShiftオブジェクトのリストでなければなりません"
         self.__shift_list = shift_list
 
+    @property
+    def getlist(self):
+        return self.__shift_list
+
     #Shiftをあらゆる形状で取得するメソッドを追加予定（主に清水さん宛）
 
 

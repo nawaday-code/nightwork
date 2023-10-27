@@ -84,3 +84,27 @@ class Person:
         self.__status = imutableInfo.status
         self.__authority = imutableInfo.authority
         self.__skills = skills.skill_list
+
+    @property
+    def uid(self):
+        return self.__uid
+
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def staffname(self):
+        return self.__staffname
+
+    @property
+    def status(self):
+        return self.__status
+
+    @property
+    def authority(self):
+        return self.__authority
+
+    @property
+    def skills(self):
+        return self.__skills

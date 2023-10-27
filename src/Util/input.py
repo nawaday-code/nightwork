@@ -14,24 +14,21 @@ class AccessDBReader:
     @staticmethod
     #staff全員の情報を取得する
     def get_all_staff_and_skills():
-        conn = pyodbc.connect(f'Driver={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={DB_PATH};PWD={DB_PASSWORD};')
+        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + DB_PATH + ';PWD=' + DB_PASSWORD + ';')
         cursor = conn.cursor()
-        cursor.execute('SELECT uid, id, staffname, status, authority FROM tblStaff')
+        cursor.execute('SELECT uid, id, staffname, status, authority FROM tblStaff WHERE status <= 3')
         rows = cursor.fetchall()
         imutable_info_list = []
         for row in rows:
-            imutable_info = ImutableInfo(row[0], row[1], row[2], row[3], row[4])
+            imutable_info = ImutableInfo(*row)
             imutable_info_list.append(imutable_info)
         imutable_info_list_obj = ImutableInfoList(imutable_info_list)
         
         persons = []
         for imutable_info in imutable_info_list_obj.imutable_info_list:
-            cursor.execute(f'SELECT modalities, status, skill_score FROM tblSkill WHERE uid = {imutable_info.uid}')
+            cursor.execute('SELECT modalityName, status, skill FROM tblSkill WHERE uid = ?', (imutable_info.uid,))
             rows = cursor.fetchall()
-            staff_skills = []
-            for row in rows:
-                skill = Skill(row[0], row[1], row[2])
-                staff_skills.append(skill)
+            staff_skills = [Skill(*row) for row in rows]
             skills = Skills(staff_skills)
             person = Person(imutable_info, skills)
             persons.append(person)
@@ -42,24 +39,21 @@ class AccessDBReader:
     #staffの勤務情報を取得する
     def get_shifts(member, date):
         
-        conn = pyodbc.connect(f'Driver={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={DB_PATH};PWD={DB_PASSWORD};')
+        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + DB_PATH + ';PWD=' + DB_PASSWORD + ';')
         cursor = conn.cursor()
         
-        start_date = date.replace(day=1)
-        if date.month == 12:
-            end_date = date.replace(year=date.year+1, month=1, day=1) - timedelta(days=1)
-        else:
-            end_date = date.replace(month=date.month+1, day=1) - timedelta(days=1)
+        start_date = date.replace(day=1) - timedelta(days=30)
+        end_date = (date.replace(day=1) + timedelta(days=60)) - timedelta(days=1)
         
         shifts = []
         for person in member.person_list:
-            cursor.execute(f'SELECT workdate, shift FROM tblShift WHERE uid = {person.uid} AND workdate BETWEEN {start_date} AND {end_date}')
+            cursor.execute('SELECT workdate, shift FROM tblShift WHERE uid = ? AND workdate BETWEEN ? AND ?', (person.uid, start_date, end_date))
             rows = cursor.fetchall()
             date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
             for shift_date in date_range:
                 shift_row = next((row for row in rows if row[0] == shift_date), None)
                 if shift_row:
-                    shift = Shift(person, shift_row[0], shift_row[1])
+                    shift = Shift(person, *shift_row)
                 else:
                     shift = Shift(person, shift_date, None)
                 shifts.append(shift)
