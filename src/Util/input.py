@@ -6,7 +6,7 @@ from src.DataObj.member import *
 from src.Entity.shift import Shift, Shifts
 
 
-DB_PATH = 'C:\\Users\\unawa\\デスクトップ\\yakinManager\\nightwork\\test勤務表\\shifttable.accdb'
+DB_PATH = r'C:\Users\Elitebook x360\OneDrive\Desktop\nightwork\test勤務表\shifttable.accdb'
 DB_PASSWORD = '0000'
 
 
