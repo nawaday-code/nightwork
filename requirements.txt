@@ -1,0 +1,9 @@
+packaging==23.2
+ply==3.11
+polars==0.19.12
+pyodbc==5.0.1
+PyQt5==5.15.10
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.13.0
+sip==6.7.12
+tomli==2.0.1
