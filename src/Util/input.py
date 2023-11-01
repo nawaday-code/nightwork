@@ -12,8 +12,8 @@ DB_PASSWORD = '0000'
 
 class AccessDBReader:
     @staticmethod
-    #staff全員の情報を取得する
-    def get_all_staff_and_skills():
+    #指定月のdeptフィールドの値を取得し、Personオブジェクトを作成する
+    def get_member(month):
         conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + DB_PATH + ';PWD=' + DB_PASSWORD + ';')
         cursor = conn.cursor()
         cursor.execute('SELECT uid, id, staffname, status, authority FROM tblStaff WHERE status <= 3')
@@ -30,7 +30,12 @@ class AccessDBReader:
             rows = cursor.fetchall()
             staff_skills = [Skill(*row) for row in rows]
             skills = Skills(staff_skills)
-            person = Person(imutable_info, skills)
+            year = datetime.now().year
+            date = datetime(year, month, 1).strftime('%Y/%m/%d')
+            cursor.execute('SELECT dept FROM tblDept WHERE date = ?', (date,))
+            dept = cursor.fetchone()[0]
+            modality = Modality(dept)
+            person = Person(imutable_info, skills, modality)
             persons.append(person)
         member = Member(persons)
         return member
