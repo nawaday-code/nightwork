@@ -4,16 +4,16 @@ class Settings:
     def __init__(self, config_file):
         with open(config_file, 'r') as f:
             config = json.load(f)
-        self.__work = config['勤務の集合']
-        self.__day_off_day = config['休診日日勤の集合']
-        self.__night = config['夜勤の集合']
-        self.__day_off_night = config['休診日日勤・夜勤の集合']
-        self.__after_night = config['夜勤明けの集合']
-        self.__day_work = config['診療日日勤の集合']
-        self.__other_work = config['その他の勤務の集合']
-        self.__holiday = config['休日の集合']
-        self.__vacation = config['休暇の集合']
-        self.__modality = config['モダリティの集合']
+        
+        self.__modalities = config.get('Modalities', [])
+        self.__shifts = config.get('Shifts', [])
+        self.__modality_config_header = config.get('ModalityConfigHeader', [])
+        self.__work_count_header = config.get('WorkCountHeader', [])
+        self.__skills = config.get('Skills', [])
+        self.__skill_types = config.get('SkillTypes', [])
+        self.__registers = config.get('Registers', [])
+        self.__working_groups = config.get('WorkingGroups', [])
+        self.__working_status = config.get('WorkingStatus', [])
 
     @property
     def work(self):
