@@ -46,14 +46,17 @@ class SettingsFormApp(QMainWindow):
         self.DEFAULTSTATUS = "日勤"
         self.DEFAULTTARGET = False
         self.DEFAULTINITIALVALUE = "init"
+        self.DEFAULTREMARKS = "備考"
 
         self.ORDERWIDTH = 50
         self.NAMEWIDTH = 100
         self.ACRONYMWIDTH = 100
-        self.TARGETWIDTH = 100
-        self.STATUSWIDTH = 100
+        self.TARGETWIDTH = 80
+        self.STATUSWIDTH = 80
         self.DATABASEWIDTH = 100
         self.DEFAULTWIDTH = 100
+        self.COLORWIDTH = 100
+        self.SEARCHSTRWIDTH = 150
         self.REMARKSWIDTH = 500
         self.data = {}
         self.dynamic_data = {}
@@ -168,8 +171,12 @@ class SettingsFormApp(QMainWindow):
                 header.setSectionResizeMode(j, QHeaderView.ResizeToContents)
                 self.tableWidget.horizontalHeaderItem(j).setTextAlignment(Qt.AlignCenter)
             elif key == "searchStr":
-                header.setSectionResizeMode(j, QHeaderView.Stretch)
+                header.setSectionResizeMode(j, QHeaderView.Fixed)
+                header.resizeSection(j, self.SEARCHSTRWIDTH)
             elif key == "color":
+                header.setSectionResizeMode(j, QHeaderView.Fixed)
+                header.resizeSection(j, self.COLORWIDTH)
+            elif key == "remarks":
                 header.setSectionResizeMode(j, QHeaderView.Stretch)
             else:
                 header.setSectionResizeMode(j, QHeaderView.Fixed)
