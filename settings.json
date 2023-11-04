@@ -13,9 +13,9 @@
             "remarks": "放射線治療:定数10人"
         },
         {
+            "order": 2,
             "name": "MRI",
             "acronym": "MR",
-            "order": 2,
             "target": true,
             "color": [
                 200,
@@ -24,9 +24,9 @@
             ]
         },
         {
+            "order": 3,
             "name": "X線TV",
             "acronym": "TV",
-            "order": 3,
             "target": true,
             "color": [
                 150,
@@ -35,9 +35,9 @@
             ]
         },
         {
+            "order": 4,
             "name": "健診",
             "acronym": "KS",
-            "order": 4,
             "target": true,
             "color": [
                 100,
@@ -46,9 +46,9 @@
             ]
         },
         {
+            "order": 5,
             "name": "核医学",
             "acronym": "NM",
-            "order": 5,
             "target": true,
             "color": [
                 193,
@@ -57,9 +57,9 @@
             ]
         },
         {
+            "order": 6,
             "name": "単純X線",
             "acronym": "XP",
-            "order": 6,
             "target": true,
             "color": [
                 255,
@@ -68,9 +68,9 @@
             ]
         },
         {
+            "order": 7,
             "name": "マンモグラフィ",
             "acronym": "MG",
-            "order": 7,
             "target": true,
             "color": [
                 255,
@@ -79,9 +79,9 @@
             ]
         },
         {
+            "order": 8,
             "name": "マンモトーム",
             "acronym": "MT",
-            "order": 8,
             "target": true,
             "color": [
                 255,
@@ -90,9 +90,9 @@
             ]
         },
         {
+            "order": 9,
             "name": "CT",
             "acronym": "CT",
-            "order": 9,
             "target": true,
             "color": [
                 255,
@@ -101,9 +101,9 @@
             ]
         },
         {
+            "order": 10,
             "name": "MRXO",
             "acronym": "XO",
-            "order": 10,
             "target": true,
             "color": [
                 145,
@@ -112,9 +112,9 @@
             ]
         },
         {
+            "order": 11,
             "name": "血管造影",
             "acronym": "AG",
-            "order": 11,
             "target": true,
             "color": [
                 166,
@@ -123,9 +123,9 @@
             ]
         },
         {
+            "order": 12,
             "name": "フリー・予備",
             "acronym": "FR",
-            "order": 12,
             "target": true,
             "color": [
                 128,
@@ -134,9 +134,9 @@
             ]
         },
         {
+            "order": 13,
             "name": "撮影助手",
             "acronym": "AS",
-            "order": 13,
             "target": false,
             "color": [
                 192,
@@ -145,9 +145,9 @@
             ]
         },
         {
+            "order": 14,
             "name": "その他",
             "acronym": "ET",
-            "order": 14,
             "target": false,
             "color": [
                 192,
@@ -1319,10 +1319,17 @@
         },
         {
             "order": 4,
-            "name": "夜勤間隔",
-            "acronym": "acronym",
-            "value": "value",
+            "name": "夜勤間隔1",
+            "acronym": "lamda1",
+            "value": 1000,
             "remarks": "明けの翌日に夜勤を入れることのできる係数"
+        },
+        {
+            "order": 5,
+            "name": "夜勤間隔2",
+            "acronym": "lamda2",
+            "value": 100,
+            "remarks": "夜勤明けに1日空けて夜勤を入れることのできる係数"
         }
     ]
 }
