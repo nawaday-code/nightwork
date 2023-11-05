@@ -1299,36 +1299,64 @@
         {
             "order": 1,
             "name": "連続勤務日数",
-            "acronym": "iota",
+            "acronym": "consecutive_jobs",
             "value": 12,
             "remarks": "連続で働くことのできる最大勤務日数"
         },
         {
             "order": 2,
-            "name": "所定労働時間",
-            "acronym": "kappa",
+            "name": "休診日休日取得日数",
+            "acronym": "fixed_working_hours",
             "value": 150,
             "remarks": "今のプログラムでは考慮していない。超過分は残業で補填"
         },
         {
             "order": 3,
             "name": "夜勤・日勤合計回数",
-            "acronym": "epsilon",
+            "acronym": "total_num_of_shifts",
             "value": 5,
             "remarks": "夜勤・休診日日勤の最大回数の制限"
         },
         {
             "order": 4,
             "name": "夜勤間隔1",
-            "acronym": "lamda1",
+            "acronym": "interval_of_night_work1",
             "value": 1000,
             "remarks": "明けの翌日に夜勤を入れることのできる係数"
         },
         {
             "order": 5,
             "name": "夜勤間隔2",
-            "acronym": "lamda2",
+            "acronym": "interval_of_night_work2",
+            "value": 500,
+            "remarks": "夜勤明けに1日空けて夜勤を入れることのできる係数"
+        },
+        {
+            "order": 6,
+            "name": "夜勤間隔3",
+            "acronym": "interval_of_night_work3",
             "value": 100,
+            "remarks": "夜勤明けに2日空けて夜勤を入れることのできる係数"
+        },
+        {
+            "order": 7,
+            "name": "夜勤間隔4",
+            "acronym": "interval_of_night_work4",
+            "value": 10,
+            "remarks": "夜勤明けに3日空けて夜勤を入れることのできる係数"
+        },
+        {
+            "order": 8,
+            "name": "夜勤間隔5",
+            "acronym": "interval_of_night_work5",
+            "value": 1,
+            "remarks": "夜勤明けに1日空けて夜勤を入れることのできる係数"
+        },
+        {
+            "order": 9,
+            "name": "夜勤間隔5",
+            "acronym": "interval_of_night_work5",
+            "value": 1,
             "remarks": "夜勤明けに1日空けて夜勤を入れることのできる係数"
         }
     ]
