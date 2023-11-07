@@ -8,5 +8,5 @@ class Member:
     def get_all(self):
         return self.__person_list
 
-    def get_persons_by_modality(self, assigned_modality):
+    def get_by_modality(self, assigned_modality):
         return [person.uid for person in self.__person_list if person.assigned_modality == assigned_modality]

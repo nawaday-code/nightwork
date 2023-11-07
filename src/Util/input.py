@@ -1,6 +1,6 @@
 #Access dbからデータを読み込むユーティリティクラス
 import pyodbc
-from datetime import timedelta
+import datetime
 from src.DataObj.person import *
 from src.DataObj.member import *
 from src.Entity.shift import Shift, Shifts
@@ -47,14 +47,14 @@ class AccessDBReader:
         conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + DB_PATH + ';PWD=' + DB_PASSWORD + ';')
         cursor = conn.cursor()
         
-        start_date = date.replace(day=1) - timedelta(days=30)
-        end_date = (date.replace(day=1) + timedelta(days=60)) - timedelta(days=1)
+        start_date = date.replace(day=1) - datetime.timedelta(days=30)
+        end_date = (date.replace(day=1) + datetime.timedelta(days=60)) - datetime.timedelta(days=1)
         
         shifts = []
         for person in member.person_list:
             cursor.execute('SELECT workdate, shift FROM tblShift WHERE uid = ? AND workdate BETWEEN ? AND ?', (person.uid, start_date, end_date))
             rows = cursor.fetchall()
-            date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
+            date_range = [start_date + datetime.timedelta(days=i) for i in range((end_date - start_date).days + 1)]
             for shift_date in date_range:
                 shift_row = next((row for row in rows if row[0] == shift_date), None)
                 if shift_row:
@@ -67,3 +67,6 @@ class AccessDBReader:
         # 各Shiftオブジェクトは、特定の日付の特定のPersonのシフト情報を表します。
         # もしPersonがその日にシフトを持っていない場合、Shiftオブジェクトのshift属性はNoneになります。
         return Shifts(shifts)
+
+
+    

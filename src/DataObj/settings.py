@@ -16,42 +16,37 @@ class Settings:
         self.__working_status = config.get('WorkingStatus', [])
 
     @property
-    def work(self):
-        return self.__work
+    def modalities(self):
+        return self.__modalities
 
     @property
-    def day_off_day(self):
-        return self.__day_off_day
+    def shifts(self):
+        return self.__shifts
 
     @property
-    def night(self):
-        return self.__night
+    def modality_config_header(self):
+        return self.__modality_config_header
 
     @property
-    def day_off_night(self):
-        return self.__day_off_night
+    def work_count_header(self):
+        return self.__work_count_header
 
     @property
-    def after_night(self):
-        return self.__after_night
+    def skills(self):
+        return self.__skills
 
     @property
-    def day_work(self):
-        return self.__day_work
+    def skill_types(self):
+        return self.__skill_types
 
     @property
-    def other_work(self):
-        return self.__other_work
+    def registers(self):
+        return self.__registers
 
     @property
-    def holiday(self):
-        return self.__holiday
+    def working_groups(self):
+        return self.__working_groups
 
     @property
-    def vacation(self):
-        return self.__vacation
-
-    @property
-    def modality(self):
-        return self.__modality
-
+    def working_status(self):
+        return self.__working_status
