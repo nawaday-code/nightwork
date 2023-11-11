@@ -24,3 +24,4 @@ class DateObject:
         for i in range(1, last_day + 1):
             month_dates.append(self.__selectDate.replace(day=i))
         return month_dates
+
