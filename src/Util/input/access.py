@@ -14,8 +14,8 @@ DB_PASSWORD = '0000'
 class AccessDBReader:
     @staticmethod
     #指定月のdeptフィールドの値を取得し、Personオブジェクトを作成する
-    def read_member(month, db_path: TrustPath):
-        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + db_path.value + ';PWD=' + DB_PASSWORD + ';')
+    def read_member(targetMonth, db_path_obj):
+        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + db_path_obj.value + ';PWD=' + DB_PASSWORD + ';')
         cursor = conn.cursor()
         cursor.execute('SELECT uid, id, staffname, status, authority FROM tblStaff WHERE status <= 3')
         rows = cursor.fetchall()
@@ -32,7 +32,7 @@ class AccessDBReader:
             staff_skills = [Skill(*row) for row in rows]
             skills = Skills(staff_skills)
             year = datetime.now().year
-            date = datetime(year, month, 1).strftime('%Y/%m/%d')
+            date = datetime(year, targetMonth, 1).strftime('%Y/%m/%d')
             cursor.execute('SELECT dept FROM tblDept WHERE date = ?', (date,))
             dept = cursor.fetchone()[0]
             modality = Modality(dept)
@@ -43,13 +43,13 @@ class AccessDBReader:
 
     @staticmethod
     #staffの勤務情報を取得する
-    def read_shifts(member, date, db_path: TrustPath):
+    def read_shifts(member, targetDate, db_path_obj):
         
-        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + db_path.value + ';PWD=' + DB_PASSWORD + ';')
+        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + db_path_obj.value + ';PWD=' + DB_PASSWORD + ';')
         cursor = conn.cursor()
         
-        start_date = date.replace(day=1) - datetime.timedelta(days=30)
-        end_date = (date.replace(day=1) + datetime.timedelta(days=60)) - datetime.timedelta(days=1)
+        start_date = targetDate.replace(day=1) - datetime.timedelta(days=30)
+        end_date = (targetDate.replace(day=1) + datetime.timedelta(days=60)) - datetime.timedelta(days=1)
         
         shifts = []
         for person in member.person_list:
