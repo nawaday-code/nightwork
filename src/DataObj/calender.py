@@ -26,13 +26,27 @@ class DateObject:
 
     @property
     def select_days(self):
-        return self.__select_days
+        return self.__select_days.value
     
     @property
     def closed_days(self):
-        return self.__closed_days
+        return self.__closed_days.value
 
     @property
     def holidays(self):
-        return self.__holidays
+        return self.__holidays.value
+    
+    def get_Tr(self):
+        return self.__select_days.value
 
+    def get_Topened(self):
+        return self.__closed_days.value
+
+    def get_Tclosed(self):
+        return self.__holidays.value
+
+    def get_T(self):
+        prev_month_days = [datetime.date(self.__select_days.value[0].year, self.__select_days.value[0].month - 1, day) for day in range(18, 32)]
+        next_month_day = datetime.date(self.__select_days.value[-1].year, self.__select_days.value[-1].month + 1, 1)
+        dateArray = DateArray(prev_month_days + self.__select_days.value + [next_month_day])
+        return dateArray.value
