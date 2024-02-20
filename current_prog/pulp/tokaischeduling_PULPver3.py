@@ -118,14 +118,17 @@ def calc_schedule():
     h2 = pulp.LpVariable.dicts('h2', [(n, t) for n in Nboth for t in Tr[:-1]], cat='Binary')
     h3 = pulp.LpVariable.dicts('h3', [(n, t) for n in Nboth for t in Tr[:-2]], cat='Binary')
     h4 = pulp.LpVariable.dicts('h4', [(n, t) for n in Nboth for t in Tr[:-3]], cat='Binary')
-
+    
+   
     # 目的関数（soft constraints）・・・
     model += pulp.lpSum([x[n, t, w] for n in Ndum for t in Tr for w in W1]) \
         + lam[0] * pulp.lpSum([i1[n, t] for n in Nboth for t in Tr]) \
         + lam[1] * pulp.lpSum([i2[n, t] for n in Nboth for t in Tr]) \
         + lam[2] * pulp.lpSum([i3[n, t] for n in Nboth for t in Tr]) \
         + lam[3] * pulp.lpSum([i4[n, t] for n in Nboth for t in Tr]) \
-        + lam[4] * pulp.lpSum([d[n] for n in Nboth])
+        + lam[4] * pulp.lpSum([d[n] for n in Nboth]) \
+        + pulp.lpSum(pulp.lpSum(twoConsecutiveHolidays - h2[n, t] for n in Nboth for t in Tr[:-1])) \
+        + pulp.lpSum(pulp.lpSum(threeConsecutiveHolidays - h3[n, t] for n in Nboth for t in Tr[:-3]))
         # + pulp.lpSum([x[n, t, W2[0]] for n in Nr for t in Tr]) \
     # 制約条件（hard constraints）
     # 日にちtにおいて技師nに勤務wを必ず割り当てる・・・(5)
@@ -217,17 +220,19 @@ def calc_schedule():
         # 休診日における休日をρ回以上取得する・・・(20)
         model += pulp.lpSum([x[n, t, 'do'] for t in Tclosed]) >= rho
 
-        # 連休取得・・・(21)(24)(27)
-        model += pulp.lpSum([h2[n, t] for t in Tr[:-1]]) >= twoConsecutiveHolidays
-        model += pulp.lpSum([h3[n, t] for t in Tr[:-2]]) >= threeConsecutiveHolidays
-        model += pulp.lpSum([h3[n, t] for t in Tr[:-3]]) >= fourConsecutiveHolidays
+        # 連休取得・・・(21)(24)(27) -> 連休回数は絶対ではなく可能限り対応するため目的関数で設定
+        # model += pulp.lpSum([h2[n, t] for t in Tr[:-1]]) >= twoConsecutiveHolidays
+        # model += pulp.lpSum([h3[n, t] for t in Tr[:-2]]) >= threeConsecutiveHolidays
+        # model += pulp.lpSum([h3[n, t] for t in Tr[:-3]]) >= fourConsecutiveHolidays
 
+# ver2 -> ver3 休日のカウントを休日＋休暇として連休をカウントする
         for t in Tr[:-1]:
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] -1 <= h2[n, t]                                           #(22)
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] >= 2 * h2[n, t]                                          #(23)
+            # 2連休を数える
+            model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t, W[11]] + x[n, t+1, W[11]] -1 <= h2[n, t]     #どちらも休日であればh2=1となる             #(22)
+            model += x[n, t, W[10]] + x[n, t+1, W[10]]  + x[n, t, W[11]] + x[n, t+1, W[11]] >= 2 * h2[n, t]    #どちらも休日であればh2=1となる　この2式で2連休を判定する  #(23)
         for t in Tr[:-2]:
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] -2 <= h3[n, t]                        #(25)
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] >= 3 * h3[n, t]                       #(26)
+            model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] + x[n, t, W[11]] + x[n, t+1, W[11]] + x[n, t+2, W[11]] -2 <= h3[n, t]                        #(25)
+            model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]]  + x[n, t, W[11]] + x[n, t+1, W[11]] + x[n, t+2, W[11]] >= 3 * h3[n, t]                       #(26)
         # for t in Tr[:-3]:
         #     model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] + x[n, t+3, W[10]] -3 <= h4[n, t]     #(28)
         #     model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] + x[n, t+3, W[10]] >= 4 * h4[n, t]    #(29)
