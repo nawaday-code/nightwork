@@ -50,6 +50,9 @@ def calc_schedule():
     # 禁止シフトの集合
     Q = ['n','n','n']
 
+    MAXCONSECUTIVEWORKS = 12        #法律上可能な連続勤務日数
+    NUM_OF_COMPESATORY_DAYSOFF_PER_DAY = 11     #１日あたりの振休が必要な人数
+
     # 日付ごとの制約条件変数
     # alpha[work][date]
     # alpha 0:A日,1:M日,2:C日,3:F日,4:A夜,5:M夜,6:C夜,7:明,8:日勤,9:他勤,10:休日,11:休暇
@@ -88,7 +91,7 @@ def calc_schedule():
 
     # 夜勤・休日日勤平均回数
     meanWorks = tfunc.calc_mean_of_night_and_daily(alpha, len(Ndaily), len(Nnight))
-
+    mean_holidays_in_closedday = len(Tclosed) * NUM_OF_COMPESATORY_DAYSOFF_PER_DAY / len(Nboth)
     Tdict, T, Tr, Tclosed, Topened, Toutput = tfunc.make_T(createDate, iota)
 
     Fprev = rd.read_previous(createDate)
@@ -118,14 +121,25 @@ def calc_schedule():
     h2 = pulp.LpVariable.dicts('h2', [(n, t) for n in Nboth for t in Tr[:-1]], cat='Binary')
     h3 = pulp.LpVariable.dicts('h3', [(n, t) for n in Nboth for t in Tr[:-2]], cat='Binary')
     h4 = pulp.LpVariable.dicts('h4', [(n, t) for n in Nboth for t in Tr[:-3]], cat='Binary')
-
+    h2sum = pulp.LpVariable.dicts('h2sum', [n for n in Nboth], cat='Integer')
+    h3sum = pulp.LpVariable.dicts('h3sum', [n for n in Nboth], cat='Integer')
+    # 休診日に休む回数
+    holidays_on_closedday = pulp.LpVariable.dicts('holidays_on_closedday', [n for n in Nboth], cat='Integer')
+    # 休診日に休む回数の平均偏差
+    holidays_on_closedday_div = pulp.LpVariable.dicts('holidays_on_closedday_div', [n for n in Nboth], lowBound=0, cat='Continuous')
+    
+    
+    
     # 目的関数（soft constraints）・・・
     model += pulp.lpSum([x[n, t, w] for n in Ndum for t in Tr for w in W1]) \
         + lam[0] * pulp.lpSum([i1[n, t] for n in Nboth for t in Tr]) \
         + lam[1] * pulp.lpSum([i2[n, t] for n in Nboth for t in Tr]) \
         + lam[2] * pulp.lpSum([i3[n, t] for n in Nboth for t in Tr]) \
         + lam[3] * pulp.lpSum([i4[n, t] for n in Nboth for t in Tr]) \
-        + lam[4] * pulp.lpSum([d[n] for n in Nboth])
+        + lam[4] * pulp.lpSum([d[n] for n in Nboth]) \
+        + pulp.lpSum([twoConsecutiveHolidays - h2sum[n] for n in Nboth]) \
+        + pulp.lpSum([threeConsecutiveHolidays - h3sum[n] for n in Nboth]) \
+        + pulp.lpSum([holidays_on_closedday_div[n] for n in Nboth])
         # + pulp.lpSum([x[n, t, W2[0]] for n in Nr for t in Tr]) \
     # 制約条件（hard constraints）
     # 日にちtにおいて技師nに勤務wを必ず割り当てる・・・(5)
@@ -190,8 +204,8 @@ def calc_schedule():
     for n in Nr: 
 
         for t in Tr:
-            # 連続勤務日数をι以内にする・・・(18)
-            model += pulp.lpSum([x[n, t-i, w] for i in range(iota+1) for w in W[:10]]) <= iota
+            # 連続勤務日数を13日以内にする・・・(18)
+            model += pulp.lpSum([x[n, t-i, w] for i in range(MAXCONSECUTIVEWORKS) for w in W[:10]]) <= MAXCONSECUTIVEWORKS
         
         # 1か月間に休日をμ回取得する・・・(19)
         model += pulp.lpSum([x[n, t, 'do'] for t in Tr]) == myu
@@ -208,27 +222,37 @@ def calc_schedule():
     for n in Nboth:
 
         # 1カ月における夜勤・日勤合計回数をε以内にする・・・(17)
-        model += pulp.lpSum([x[n, t, w] for t in Tr for w in W[:7]]) == s[n]
+        model += pulp.lpSum([x[n, t, w] for t in Tr for w in W[:7]]) == s[n]   #各技師の合計夜勤・休日日勤回数
         model += s[n] <= epsilon
         # 各技師の合計夜勤・休日日勤回数の平均偏差・・・(32)
         model += meanWorks - s[n] >= -d[n]
         model += meanWorks - s[n] <= d[n]
 
         # 休診日における休日をρ回以上取得する・・・(20)
-        model += pulp.lpSum([x[n, t, 'do'] for t in Tclosed]) >= rho
+        # model += pulp.lpSum([x[n, t, 'do'] for t in Tclosed]) >= rho
+        # 休診日における休日の取得回数
+        model += pulp.lpSum([x[n, t, 'do'] for t in Tclosed]) == holidays_on_closedday[n]
+        # 休診日における休日の回数をできるだけ平均化する
+        model += mean_holidays_in_closedday - holidays_on_closedday[n] >= -holidays_on_closedday_div[n]
+        model += mean_holidays_in_closedday - holidays_on_closedday[n] <= holidays_on_closedday_div[n]
 
         # 連休取得・・・(21)(24)(27)
-        model += pulp.lpSum([h2[n, t] for t in Tr[:-1]]) >= twoConsecutiveHolidays
-        model += pulp.lpSum([h3[n, t] for t in Tr[:-2]]) >= threeConsecutiveHolidays
-        model += pulp.lpSum([h3[n, t] for t in Tr[:-3]]) >= fourConsecutiveHolidays
+        # model += pulp.lpSum([h2[n, t] for t in Tr[:-1]]) >= twoConsecutiveHolidays
+        # model += pulp.lpSum([h3[n, t] for t in Tr[:-2]]) >= threeConsecutiveHolidays
+        # model += pulp.lpSum([h3[n, t] for t in Tr[:-3]]) >= fourConsecutiveHolidays
 
+        # 連休の取得は休日と休暇を組み合わせて判定する
         for t in Tr[:-1]:
-            # 2連休を数える
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] -1 <= h2[n, t]     #どちらも休日であればh2=1となる                                      #(22)
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] >= 2 * h2[n, t]    #どちらも休日であればh2=1となる　この2式で2連休を判定する                                      #(23)
+            # 2連休を数える 下の2式を同時に満たすことができれば対象t日と翌日は休日となり２連休の判定ができる
+            model += pulp.lpSum([x[n, t + i, w] for i in range(2) for w in W[10:12]]) -1 <= h2[n, t]     #どちらも休日であればh2=1となる                                      #(22)
+            model += pulp.lpSum([x[n, t + i, w] for i in range(2) for w in W[10:12]])  >= 2 * h2[n, t]    #どちらも休日であればh2=1となる　この2式で2連休を判定する                                      #(23)
+        # 各スタッフにおける２連休の総和
+        model += pulp.lpSum([h2[n, t] for t in Tr[:-1]]) == h2sum[n]
+        
         for t in Tr[:-2]:
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] -2 <= h3[n, t]                        #(25)
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] >= 3 * h3[n, t]                       #(26)
+            model += pulp.lpSum([x[n, t + i, w] for i in range(3) for w in W[10:12]]) -2 <= h3[n, t]                        #(25)
+            model += pulp.lpSum([x[n, t + i, w] for i in range(3) for w in W[10:12]]) >= 3 * h3[n, t]                       #(26)
+        model += pulp.lpSum([h3[n, t] for t in Tr[:-2]]) == h3sum[n]
         # for t in Tr[:-3]:
         #     model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] + x[n, t+3, W[10]] -3 <= h4[n, t]     #(28)
         #     model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] + x[n, t+3, W[10]] >= 4 * h4[n, t]    #(29)
