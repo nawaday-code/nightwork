@@ -223,9 +223,8 @@ def calc_schedule():
         model += pulp.lpSum([h3[n, t] for t in Tr[:-3]]) >= fourConsecutiveHolidays
 
         for t in Tr[:-1]:
-            # 2連休を数える
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] -1 <= h2[n, t]     #どちらも休日であればh2=1となる                                      #(22)
-            model += x[n, t, W[10]] + x[n, t+1, W[10]] >= 2 * h2[n, t]    #どちらも休日であればh2=1となる　この2式で2連休を判定する                                      #(23)
+            model += x[n, t, W[10]] + x[n, t+1, W[10]] -1 <= h2[n, t]                                           #(22)
+            model += x[n, t, W[10]] + x[n, t+1, W[10]] >= 2 * h2[n, t]                                          #(23)
         for t in Tr[:-2]:
             model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] -2 <= h3[n, t]                        #(25)
             model += x[n, t, W[10]] + x[n, t+1, W[10]] + x[n, t+2, W[10]] >= 3 * h3[n, t]                       #(26)
