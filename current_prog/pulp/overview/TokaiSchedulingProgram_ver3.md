@@ -48,7 +48,7 @@ $C$夜：休診日における$CT$夜勤業務
 正規スタッフ：そのモダリティに配属されているスタッフ  
 
 
-# 記号の定義
+# **記号** および **変数** の定義
 $N$：技師全員の集合(ダミーを含む)&emsp; $N = N_r + N_{dum}$  
 $N_r$：スケジュールの対象となる技師の集合&emsp; $N_r \subset N$  
 $N_{dum}$：ダミー技師の集合&emsp; $N_{dum} \subset N$  
@@ -98,33 +98,45 @@ $Q$：禁止勤務の組合せ&emsp; $Q = \{3連続夜勤(夜勤，明け，夜�
 ***
 $F_{previous}$：前月分の勤務の集合&emsp; $F_{prev}=\{(i,j,k),\quad i\in N_r, \quad j \in T \setminus T_r, \quad k \in W\}$  
 $F_{request}$：勤務希望の集合&emsp; $F_{requ}=\{(i,j,k),\quad i\in N_r, \quad j \in T_r, \quad k \in W\}$  
-
+$F_{dayoff}$ : 休日希望の集合&emsp; $F_{dayoff}=\{(i,j,k),\quad i\in N_r, \quad j \in T_r, \quad k \in W\}$
 ***
-#### 日付ごと=勤務表の列（業務の質）
-$Required\ Staff\ of\ Modality(\alpha_{t\cdot w})$：日付$t$における各勤務$w$の必要人数  
-$Regular\ Staff\ Required\ of\ Modality(\beta_{t\cdot m})$：日付$t$における各モダリティ$m$の最低限必要な正規スタッフ人数  
-$Management\ Staff\ of\ Modality(\gamma_{t\cdot m})$：日付$t$における各モダリティ$m$の責任者クラスの最低限必要な人数  
-***
-#### スタッフごと=勤務表の行（労働環境）
-$Total\ Day\ and\ Night\ Work\ Limit\ (\epsilon)$：各月における夜勤・日勤合計回数の上限  
-$Consecutive\ Work\ Limit\ (\iota)$：連続勤務日数の上限  
-$Standard\ Wroking\ Hour (\kappa)$：所定労働時間（今回のプログラムでは考慮していない⇒超えた場合は残業で対応）  
-$Night\ Work\ Interval\ Weight (\lambda_{2\sim 4})$：夜勤間隔における荷重係数（できる限り短い間隔で入らないようにする）  
-$Night\ and\ Holiday\ Work\ Deviation\ Weight\ (\lambda_{5})$：夜勤・休日日勤回数の平均偏差における荷重係数（できる限り回数を揃える）  
-$ClosedDay\ Work\ Frequency\ Deviation\ Weight\ (\lambda_{6})$：休診日における勤務回数の平均偏差における荷重係数（できる限り回数を揃える  
-$Consecutive\ Holidays\ Achievement\ Weight\ (\lambda_{7\sim 8})$：連休の設定回数達成のための荷重係数（できる限り達成する） 
+$\alpha_{t.w}$ : 各モダリティの各勤務の必要人数  
+$\beta_{t.m}$ : 各モダリティの最低限必要な正規スタッフ人数  
+$\gamma_{t.m}$ : 各モダリティの責任者クラスの最低限必要な人数  
+***  
+$x$：各技師$n$が各日にち$t$における勤務$w$を行うどうかを決めるバイナリ変数  
+$i_{work_{2 \sim 4}}$ : 夜勤間隔を数えるためのバイナリ変数  
+$h_{consective_{2 \sim 3}}$：2~3連休を数えるためのバイナリ変数  
+$h_{sum_{2 \sim 3}} $ : 連休を達成するための整数変数  
+$w_{all}$ : 夜勤・休日日勤回数を数えるための整数変数  
+$d_{all}$：夜勤・休日日勤回数の偏差を求める実数変数  
+$w_{close}$ : 休診日の勤務を数えるための整数変数  
+$d_{close}$ : 休診日勤務回数の偏差を求める実数変数
 
-$$
-\begin{cases}
-\lambda_2 = 0.1 \\
-\lambda_3 = 0.001 \\
-\lambda_4 = 0.0001 \\
-\lambda_5 = 0.01 \\
-\end{cases}
-$$
-$\mu$：各月における休日数  
-$\nu_{2 \sim 4}$：各月における2・3・4連休数  
-$\rho$：各月における休診日に最低限取得しなければならない休日数  
+#### 日付ごと考慮している事項=勤務表の列（業務の質）
+- 日付$t$における各勤務$w$の必要人数 : $Required\ Staff\ of\ Modality(\alpha_{t\cdot w})$  
+- 日付$t$における各モダリティ$m$の最低限必要な正規スタッフ人数 : $Regular\ Staff\ Required\ of\ Modality(\beta_{t\cdot m})$  
+- 日付$t$における各モダリティ$m$の責任者クラスの最低限必要な人数 : $Management\ Staff\ of\ Modality(\gamma_{t\cdot m})$  
+***
+#### スタッフごとに考慮している事項=勤務表の行（労働環境）
+- 休日数 : $Day\ Off\ Number\ (\mu)$  
+- 各月における夜勤・日勤合計回数の上限 : $Total\ Day\ and\ Night\ Work\ Limit\ (\epsilon)$  
+- 連続勤務日数の上限 : $Consecutive\ Work\ Limit\ (\iota)$  
+- 所定労働時間 : $Standard\ Wroking\ Hour (\kappa)$  
+→今回のプログラムでは考慮していない⇒超えた場合は残業で対応  
+- 夜勤間隔 : $Night\ Work\ Interval(i)※1$ 
+  - 夜勤間隔における荷重係数 : $Night\ Work\ Interval\ Weight (\lambda_{2\sim 4})$  
+- 夜勤・休日日勤回数の平均化 : $Mean\ Night\ and Holiday\ Work※1$  
+  - 平均偏差における荷重係数 : $Night\ and\ Holiday\ Work\ Deviation\ Weight\ (\lambda_{5})$ 
+- 休診日におけ出勤回数の平均化 : $ClosedDay\ Work\ Number※1$  
+  - 平均偏差における荷重係数 : $ClosedDay\ Work\ Frequency\ Deviation\ Weight\ (\lambda_{6})$  
+- ２，３連休の取得回数 : $Consecutive\ Holidays\ Number※1$  
+  - 達成するための荷重係数 : $Consecutive\ Holidays\ Achievement\ Weight\ (\lambda_{7\sim 8})$  
+- 勤務希望を叶える : $Work\ Request(F_{request})$  
+- 休日希望を叶える : $Dayoff\ Request(F_{dayoff})$  
+  - 達成するための荷重係数 : $Dayoff\ Request\ Weight\ (\lambda_{9})$  
+
+
 
 # 変数
 $x$：各技師$n$が各日にち$t$における勤務$w$を行うどうかを決めるバイナリ変数  
@@ -158,7 +170,20 @@ min.\qquad  &\sum_{n\in N_{dum}}\sum_{t\in T_r}\sum_{w\in W}x_{ntw}
             & + \lambda_3  \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 3}{i_3}_{n \cdot t} + \lambda_4  \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 4}{i_4}_{n \cdot t} \\
             &+ \lambda_5  \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 5}{i_5}_{n \cdot t} \tag{4}
 \end{align*}
+
 $$
+$$
+\begin{cases}
+\lambda_2 = 0.1 \\
+\lambda_3 = 0.001 \\
+\lambda_4 = 0.0001 \\
+\lambda_5 = 0.01 \\
+\lambda_6 = 0.001 \\
+\lambda_7 = 0.0001 \\
+\lambda_8 = 0.01 \\
+\end{cases}
+$$
+
 # 制約条件 $\fallingdotseq Hard \quad Constraints$  
 技師$n$に勤務$w$を必ず割り当てる  
 $$
@@ -391,3 +416,15 @@ N.datに格納さ入れているUIDと対応した職員番号と氏名が格納
 データはASやET，ダミーのデータを含んでいる  
 各行にUID, 職員ID，氏名，日付，勤務の順に値が入っている  
 ただし，ダミーのデータは職員ID，氏名はブランクとなっている
+
+
+
+### 次月の処理  
+次月1日は夜勤明け、あるいは勤務希望がある場合は１となり、それ以外は0となる
+どう定式化するか
+
+### 連続勤務日数の制御
+連勤の上限を12日までとして、目標とする連続勤務日数をどのように達成するか
+
+### 休日の希望取得
+休日の希望取得をどう定式化するか
