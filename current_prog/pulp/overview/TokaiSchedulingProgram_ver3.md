@@ -111,7 +111,8 @@ $h_{sum_{2 \sim 3}} $ : 連休を達成するための整数変数
 $w_{all}$ : 夜勤・休日日勤回数を数えるための整数変数  
 $d_{all}$：夜勤・休日日勤回数の偏差を求める実数変数  
 $w_{close}$ : 休診日の勤務を数えるための整数変数  
-$d_{close}$ : 休診日勤務回数の偏差を求める実数変数
+$d_{close}$ : 休診日勤務回数の偏差を求める実数変数  
+$r_{dayoff}$ : 休日希望が叶わなかった回数を数えるための変数
 
 #### 日付ごと考慮している事項=勤務表の列（業務の質）
 - 日付$t$における各勤務$w$の必要人数 : $Required\ Staff\ of\ Modality(\alpha_{t\cdot w})$  
@@ -124,7 +125,7 @@ $d_{close}$ : 休診日勤務回数の偏差を求める実数変数
 - 連続勤務日数の上限 : $Consecutive\ Work\ Limit\ (\iota)$  
 - 所定労働時間 : $Standard\ Wroking\ Hour (\kappa)$  
 →今回のプログラムでは考慮していない⇒超えた場合は残業で対応  
-- 夜勤間隔 : $Night\ Work\ Interval(i)※1$ 
+- 夜勤間隔 : $Night\ Work\ Interval(i_{work})※1$ 
   - 夜勤間隔における荷重係数 : $Night\ Work\ Interval\ Weight (\lambda_{2\sim 4})$  
 - 夜勤・休日日勤回数の平均化 : $Mean\ Night\ and Holiday\ Work※1$  
   - 平均偏差における荷重係数 : $Night\ and\ Holiday\ Work\ Deviation\ Weight\ (\lambda_{5})$ 
@@ -133,10 +134,10 @@ $d_{close}$ : 休診日勤務回数の偏差を求める実数変数
 - ２，３連休の取得回数 : $Consecutive\ Holidays\ Number※1$  
   - 達成するための荷重係数 : $Consecutive\ Holidays\ Achievement\ Weight\ (\lambda_{7\sim 8})$  
 - 勤務希望を叶える : $Work\ Request(F_{request})$  
-- 休日希望を叶える : $Dayoff\ Request(F_{dayoff})$  
+- 休日希望を叶える : $Dayoff\ Request(F_{dayoff})※1$  
   - 達成するための荷重係数 : $Dayoff\ Request\ Weight\ (\lambda_{9})$  
 
-
+※1 可能な限り達成できるように努力する
 
 # 変数
 $x$：各技師$n$が各日にち$t$における勤務$w$を行うどうかを決めるバイナリ変数  
@@ -145,14 +146,14 @@ $$
 x_{n\cdot t \cdot w}\in \{0,1\}\qquad,n\in N,t\in T,w\in W^+\tag{1}
 $$
 
-$h_{2 \sim 4}$：2~4連休を数えるためのバイナリ変数  
+$h_{consective_{2 \sim 4}}$：2~4連休を数えるためのバイナリ変数  
 $$
-{h_k}_{n\cdot t} \in \{0,1\} \qquad ,k =\{2,3,4\},n \in Nr, t \in T_r \tag{2}
+h_{consective_{k n\cdot t}} \in \{0,1\} \qquad ,k =\{2,3,4\},n \in Nr, t \in T_r \tag{2}
 $$
 
-$i_{2 \sim 5}$：2~4日間隔の夜勤を数えるためのバイナリ変数  
+$i_{work_{2 \sim 5}}$：2~4日間隔の夜勤を数えるためのバイナリ変数  
 $$
-{i_k}_{n \cdot t} \in \{0,1\} \qquad ,k =\{2,3,4\},n \in N_{night}, t \in T_r\tag{3}
+{i_work_{n \cdot t}} \in \{0,1\} \qquad ,k =\{2,3,4\},n \in N_{night}, t \in T_r\tag{3}
 $$
 
 $d$：夜勤・休日日勤回数との偏差  
@@ -174,13 +175,13 @@ min.\qquad  &\sum_{n\in N_{dum}}\sum_{t\in T_r}\sum_{w\in W}x_{ntw}
 $$
 $$
 \begin{cases}
-\lambda_2 = 0.1 \\
-\lambda_3 = 0.001 \\
-\lambda_4 = 0.0001 \\
-\lambda_5 = 0.01 \\
-\lambda_6 = 0.001 \\
-\lambda_7 = 0.0001 \\
-\lambda_8 = 0.01 \\
+\lambda_2 = 0.1\qquad 夜勤間隔2日 \\
+\lambda_3 = 0.001\qquad 夜勤間隔3日 \\
+\lambda_4 = 0.0001\qquad 夜勤間隔4日 \\
+\lambda_5 = 0.01 \qquad 夜勤・休診日日勤係数\\
+\lambda_6 = 0.001\qquad 休診日出勤係数 \\
+\lambda_7 = 0.0001\qquad 連休係数 \\
+\lambda_8 = 0.01\qquad 休日希望係数 \\
 \end{cases}
 $$
 

@@ -52,7 +52,7 @@ def calc_schedule():
 
     MAXCONSECUTIVEWORKS = 12        #法律上可能な連続勤務日数
     NUM_OF_COMPESATORY_DAYSOFF_PER_DAY = 11     #１日あたりの振休が必要な人数
-
+    REQUIRED_NUM_OF_COLOSED_DAY = 11 #休診日に必要な人数（日勤、夜勤、明け）
     # 日付ごとの制約条件変数
     # alpha[work][date]
     # alpha 0:A日,1:M日,2:C日,3:F日,4:A夜,5:M夜,6:C夜,7:明,8:日勤,9:他勤,10:休日,11:休暇
@@ -66,6 +66,8 @@ def calc_schedule():
     Fprev = []; Fp = []
     # 今月分の勤務希望
     Frequ = []; Fr = []
+    # 休日希望
+    Frequ_dayoff = []; Frd = []
 
     staff = rd.read_staff_info()
 
@@ -91,7 +93,8 @@ def calc_schedule():
 
     # 夜勤・休日日勤平均回数
     meanWorks = tfunc.calc_mean_of_night_and_daily(alpha, len(Ndaily), len(Nnight))
-    mean_holidays_in_closedday = len(Tclosed) * NUM_OF_COMPESATORY_DAYSOFF_PER_DAY / len(Nboth)
+    # 休診日かかる夜勤・日勤平均回数=休診日 * 休診日に必要な人数 / 夜勤・日勤対応スタッフ数
+    mean_works_in_closedday = len(Tclosed) * REQUIRED_NUM_OF_COLOSED_DAY / len(Nboth)
     Tdict, T, Tr, Tclosed, Topened, Toutput = tfunc.make_T(createDate, iota)
 
     Fprev = rd.read_previous(createDate)
@@ -123,10 +126,12 @@ def calc_schedule():
     h4 = pulp.LpVariable.dicts('h4', [(n, t) for n in Nboth for t in Tr[:-3]], cat='Binary')
     h2sum = pulp.LpVariable.dicts('h2sum', [n for n in Nboth], cat='Integer')
     h3sum = pulp.LpVariable.dicts('h3sum', [n for n in Nboth], cat='Integer')
-    # 休診日に休む回数
-    holidays_on_closedday = pulp.LpVariable.dicts('holidays_on_closedday', [n for n in Nboth], cat='Integer')
-    # 休診日に休む回数の平均偏差
-    holidays_on_closedday_div = pulp.LpVariable.dicts('holidays_on_closedday_div', [n for n in Nboth], lowBound=0, cat='Continuous')
+    # 休診日に勤務する回数
+    works_on_closedday = pulp.LpVariable.dicts('works_on_closedday', [n for n in Nboth], cat='Integer')
+    # 休診日に勤務する回数の平均偏差
+    works_on_closedday_div = pulp.LpVariable.dicts('works_on_closedday_div', [n for n in Nboth], lowBound=0, cat='Continuous')
+    # 休日希望がかなわなかった総数
+    req_dayoff = pulp.LpVariable('req_dayoff', lowBound=0, cat='integer')
     
     
     
@@ -139,19 +144,13 @@ def calc_schedule():
         + lam[4] * pulp.lpSum([d[n] for n in Nboth]) \
         + pulp.lpSum([twoConsecutiveHolidays - h2sum[n] for n in Nboth]) \
         + pulp.lpSum([threeConsecutiveHolidays - h3sum[n] for n in Nboth]) \
-        + pulp.lpSum([holidays_on_closedday_div[n] for n in Nboth])
+        + pulp.lpSum([works_on_closedday_div[n] for n in Nboth])
         # + pulp.lpSum([x[n, t, W2[0]] for n in Nr for t in Tr]) \
     # 制約条件（hard constraints）
     # 日にちtにおいて技師nに勤務wを必ず割り当てる・・・(5)
     for n in N:
         for t in Tr:
             model += pulp.lpSum([x[n, t, w] for w in W]) == 1
-# 次月１日の処理を考える
-# 1日は夜勤明け、あるいは勤務希望がある場合は１となり、それ以外は0となる
-
-
-
-
 
     # 日にちtにおける勤務wの必要人数を合わせる
     # W1 0:A日, 1:M日, 2:C日, 3:F日, 4:A夜, 5:M夜, 6:C夜, 7:明, 8:日, 9:他勤, 10:休日, 11:休暇
@@ -236,11 +235,11 @@ def calc_schedule():
 
         # 休診日における休日をρ回以上取得する・・・(20)
         # model += pulp.lpSum([x[n, t, 'do'] for t in Tclosed]) >= rho
-        # 休診日における休日の取得回数
-        model += pulp.lpSum([x[n, t, 'do'] for t in Tclosed]) == holidays_on_closedday[n]
-        # 休診日における休日の回数をできるだけ平均化する
-        model += mean_holidays_in_closedday - holidays_on_closedday[n] >= -holidays_on_closedday_div[n]
-        model += mean_holidays_in_closedday - holidays_on_closedday[n] <= holidays_on_closedday_div[n]
+        # 休診日における勤務の取得回数
+        model += pulp.lpSum([x[n, t, 'do'] for t in Tclosed]) == works_on_closedday[n]
+        # 休診日における勤務回数をできるだけ平均化する
+        model += mean_works_in_closedday - works_on_closedday[n] >= -works_on_closedday_div[n]
+        model += mean_works_in_closedday - works_on_closedday[n] <= works_on_closedday_div[n]
 
         # 連休取得・・・(21)(24)(27)
         # model += pulp.lpSum([h2[n, t] for t in Tr[:-1]]) >= twoConsecutiveHolidays
@@ -266,7 +265,8 @@ def calc_schedule():
         # 夜勤日勤勤務間隔         
         # 休日日勤の翌日に休日日勤や夜勤をできる限り入れない
         for t in Tr:
-            model += pulp.lpSum([x[n, t-1, w] for w in W[:4]]) + pulp.lpSum([x[n, t, w] for w in W[:7]]) -1 <= i1[n, t]
+            # 以下の2式を満たす場合、勤務間隔が1日となる -> 対象日前日に日勤、対象日に日勤および夜勤が入る場合を想定　対象日前日に夜勤は考慮しない。ほかの制約で夜勤のあとに必ず明けが入るため
+            model += pulp.lpSum([x[n, t-1, w] for w in W[:4]]) + pulp.lpSum([x[n, t, w] for w in W[:7]]) -1 <= i1[n, t]  
             model += pulp.lpSum([x[n, t-1, w] for w in W[:4]]) + pulp.lpSum([x[n, t, w] for w in W[:7]]) >= 2 * i1[n, t]
         # 休日日勤・夜勤の2日後に休日日勤や夜勤をできる限り入れない
             model += pulp.lpSum([x[n, t-2, w] for w in W[:7]]) + pulp.lpSum([x[n, t, w] for w in W[:7]]) -1 <= i2[n, t]
