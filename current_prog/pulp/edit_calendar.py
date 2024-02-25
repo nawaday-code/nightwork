@@ -11,15 +11,18 @@ with open('syukujitsu.csv', newline='') as csvfile:
             calendar_data.append(row)
         is_first_row = False   
 
-        
-
 # Prompt for start_date and end_date
+print()
 print("*******************************************")
 print("勤務表で使用する休日ファイルを作成します。")
 print("カレンダーの原本は内閣府が発行する【syukujitsu.csv】です。")
-print("このデータは1955年の祝日から記載されているので、必要に応じてデータを削除してください。")
+
 print("データは1列目に日付、2列目に休日名となっています。")
 print("作成されるファイル名は【tokai-calendar.csv】です。")  
+print()
+
+print("このデータは1955年の祝日から記載されているので、必要に応じてデータを削除してください")
+print("祝日でも診療日となる場合は、そのデータを削除するか、あるいは接頭語に'#'を付加してください。読み飛ばしを行います。")
 print()    
 print("カレンダー作成の開始日(YYYY/MM/DD)と終了日(YYYY/MM/DD)を入力してください。")
 print("*******************************************")
@@ -54,20 +57,30 @@ while current_date <= end_date:
         if (current_date.day // 7) == 3:  # 4th Saturday
             dates_to_generate.append(current_date.strftime("%Y/%m/%d"))
             dates_to_generate.append('第4土曜日')
+    
     if dates_to_generate:
+        found = False
+        # calendar_dataを検索し、同じ日付があるか調べる
         for data in calendar_data:
-            if data[0] == current_date.strftime("%Y/%m/%d") and data[1] == '':
-                calendar_data.append(dates_to_generate)
+            if data[0] == current_date.strftime("%Y/%m/%d"):
+                # 同じ日付があり、かつ休日名が空であれば追加
+                if data[1] == '':
+                    print(len(data))
+                    data[1] = dates_to_generate[1]
+                found = True
                 break
+
+        if not found:
+            calendar_data.append(dates_to_generate)
        
     current_date += datetime.timedelta(days=1)
 
 
-    calendar_data.sort(key=lambda x: datetime.datetime.strptime(x[0], "%Y/%m/%d").date())
+calendar_data.sort(key=lambda x: datetime.datetime.strptime(x[0], "%Y/%m/%d").date())
 
-    with open('tokai-calendar.csv', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        for data in calendar_data:
-            writer.writerow(data)
+with open('tokai-calendar.csv', 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    for data in calendar_data:
+        writer.writerow(data)
 
 
