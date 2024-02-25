@@ -105,15 +105,28 @@ $\beta_{t.m}$ : 各モダリティの最低限必要な正規スタッフ人数
 $\gamma_{t.m}$ : 各モダリティの責任者クラスの最低限必要な人数  
 ***  
 $x$：各技師$n$が各日にち$t$における勤務$w$を行うどうかを決めるバイナリ変数  
-$i_{work_{2 \sim 4}}$ : 夜勤間隔を数えるためのバイナリ変数  
-$h_{consective_{2 \sim 3}}$：2~3連休を数えるためのバイナリ変数  
-$h_{sum_{2 \sim 3}} $ : 連休を達成するための整数変数  
-$w_{all}$ : 夜勤・休日日勤回数を数えるための整数変数  
-$d_{all}$：夜勤・休日日勤回数の偏差を求める実数変数  
-$w_{close}$ : 休診日の勤務を数えるための整数変数  
-$d_{close}$ : 休診日勤務回数の偏差を求める実数変数  
-$r_{dayoff}$ : 休日希望が叶わなかった回数を数えるための変数
-
+\
+$dummy$ : ダミー技師が割り当てられている割合を求める実数変数  
+  
+$work\ interval_{1 \sim 4}$ : 夜勤間隔を数えるためのバイナリ変数  
+$total\ work\ interval$ : 各夜勤間隔の総和と荷重係数の積を求める実数変数  
+\
+$2(3)consecutive\ holidays$：2,3連休を数えるためのバイナリ変数  
+$total\ 2(3)consecutive\ holidays$ : 各連休回数を数えるための整数変数  
+$consecutive\ holidays$ : 総連休回数と荷重係数を求めるための実数変数  
+\
+$work_{all}$ : 各技師の合計夜勤・休日日勤回数の整数変数  
+$work_{all}dev$：各技師の合計夜勤・休日日勤回数の平均偏差を求める実数変数  
+$total\ work_{all}dev$ :各技師の合計夜勤・休日日勤回数の平均偏差の合計を求める実数変数     
+\
+$work_{close}$ : 休診日の勤務を数えるための整数変数  
+$work_{close}dev$ : 休診日勤務回数の偏差を求める実数変数  
+$total\ work_{close}dev$ : 休診日勤務回数の平均偏差の合計を求める実数変数  
+\
+$req_{dayoff}$ : 休日希望が叶わなかった回数を数えるための変数  
+  
+$weight\ coefficients(\lambda)_{0 \sim 10}$ : 目的関数の各項目に付加される係数
+***
 #### 日付ごと考慮している事項=勤務表の列（業務の質）
 - 日付$t$における各勤務$w$の必要人数 : $Required\ Staff\ of\ Modality(\alpha_{t\cdot w})$  
 - 日付$t$における各モダリティ$m$の最低限必要な正規スタッフ人数 : $Regular\ Staff\ Required\ of\ Modality(\beta_{t\cdot m})$  
@@ -126,7 +139,7 @@ $r_{dayoff}$ : 休日希望が叶わなかった回数を数えるための変�
 - 所定労働時間 : $Standard\ Wroking\ Hour (\kappa)$  
 →今回のプログラムでは考慮していない⇒超えた場合は残業で対応  
 - 夜勤間隔 : $Night\ Work\ Interval(i_{work})※1$ 
-  - 夜勤間隔における荷重係数 : $Night\ Work\ Interval\ Weight (\lambda_{2\sim 4})$  
+ - 夜勤間隔における荷重係数 : $Night\ Work\ Interval\ Weight (\lambda_{2\sim 4})$  
 - 夜勤・休日日勤回数の平均化 : $Mean\ Night\ and Holiday\ Work※1$  
   - 平均偏差における荷重係数 : $Night\ and\ Holiday\ Work\ Deviation\ Weight\ (\lambda_{5})$ 
 - 休診日におけ出勤回数の平均化 : $ClosedDay\ Work\ Number※1$  
@@ -140,11 +153,13 @@ $r_{dayoff}$ : 休日希望が叶わなかった回数を数えるための変�
 ※1 可能な限り達成できるように努力する
 
 # 変数
+
 $x$：各技師$n$が各日にち$t$における勤務$w$を行うどうかを決めるバイナリ変数  
 
 $$
 x_{n\cdot t \cdot w}\in \{0,1\}\qquad,n\in N,t\in T,w\in W^+\tag{1}
 $$
+
 
 $h_{consective_{2 \sim 4}}$：2~4連休を数えるためのバイナリ変数  
 $$
@@ -153,28 +168,46 @@ $$
 
 $i_{work_{2 \sim 5}}$：2~4日間隔の夜勤を数えるためのバイナリ変数  
 $$
-{i_work_{n \cdot t}} \in \{0,1\} \qquad ,k =\{2,3,4\},n \in N_{night}, t \in T_r\tag{3}
+i_{work_{n \cdot t}} \in \{0,1\} \qquad ,k =\{2,3,4\},n \in N_{night}, t \in T_r\tag{3}
 $$
 
 $d$：夜勤・休日日勤回数との偏差  
 $$
 d_{n} \geqq 0 \qquad ,n \in N_{both}
 $$
-# 目的関数 $\fallingdotseq Soft \quad Constrains$ 
+
+
+<!-- # 目的関数 $\fallingdotseq Soft \quad Constrains$  -->
+# 目的関数  
 ダミー技師が勤務$W$に配置される回数を最小にし，  
 &emsp; &emsp; &emsp; 夜勤間隔をできる限り設けて，  
 &emsp; &emsp; &emsp;  &emsp; 夜勤・休日日勤回数をできる限り揃える  
 $$
 \begin{align*}
-min.\qquad  &\sum_{n\in N_{dum}}\sum_{t\in T_r}\sum_{w\in W}x_{ntw}
-            + \lambda_2 \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 2}{i_2}_{n \cdot t}\\
-            & + \lambda_3  \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 3}{i_3}_{n \cdot t} + \lambda_4  \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 4}{i_4}_{n \cdot t} \\
-            &+ \lambda_5  \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 5}{i_5}_{n \cdot t} \tag{4}
-\end{align*}
+min.\qquad &dummy \\
+           & +\ total\ work\ interval \\
+           & \quad +\ consecutive\ holidays \\
+           & \quad \quad +\ total\ work\ all\ dev \\
+           & \quad \quad \quad +\ total\ work\ close\ dev \\
+           & \quad \quad \quad \quad +\ req\ dayoff 
+\end{align*}  
+
+% \begin{align*}
+% min.\qquad  &\sum_{n\in N_{dum}}\sum_{t\in T_r}\sum_{w\in W}x_{ntw}
+%             + \lambda_2 \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 2}{i_2}_{n \cdot t}\\
+%             & + \lambda_3  \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 3}{i_3}_{n \cdot t} + \lambda_4  \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 4}{i_4}_{n \cdot t} \\
+%             &+ \lambda_5  \sum _{n \in N_{night}}\sum_{t = 0}^{T_r - 5}{i_5}_{n \cdot t} \tag{4}
+% \end{align*}
+$$
+
+$$  
+dummy = \sum x_{ntw} \qquad n\in N_{dum} \quad t\in T_{r} \quad w\in W
 
 $$
-$$
+<!-- $$
+荷重係数\lambda
 \begin{cases}
+\lambda_1 = 1\qquad ダミー技師 \\
 \lambda_2 = 0.1\qquad 夜勤間隔2日 \\
 \lambda_3 = 0.001\qquad 夜勤間隔3日 \\
 \lambda_4 = 0.0001\qquad 夜勤間隔4日 \\
@@ -183,7 +216,7 @@ $$
 \lambda_7 = 0.0001\qquad 連休係数 \\
 \lambda_8 = 0.01\qquad 休日希望係数 \\
 \end{cases}
-$$
+$$ -->
 
 # 制約条件 $\fallingdotseq Hard \quad Constraints$  
 技師$n$に勤務$w$を必ず割り当てる  
