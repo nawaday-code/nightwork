@@ -45,8 +45,8 @@ class DateObject:
     def get_Tclosed(self):
         return self.__holidays.value
 
-    def get_T(self):
-        prev_month_days = [datetime.date(self.__select_days.value[0].year, self.__select_days.value[0].month - 1, day) for day in range(18, 32)]
-        next_month_day = datetime.date(self.__select_days.value[-1].year, self.__select_days.value[-1].month + 1, 1)
+    def get_T(self, prev_month_start_day=18, next_month_end_day=1):
+        prev_month_days = [datetime.date(self.__select_days.value[0].year, self.__select_days.value[0].month - 1, day) for day in range(prev_month_start_day, 32)]
+        next_month_day = datetime.date(self.__select_days.value[-1].year, self.__select_days.value[-1].month + 1, next_month_end_day)
         dateArray = DateArray(prev_month_days + self.__select_days.value + [next_month_day])
         return dateArray.value

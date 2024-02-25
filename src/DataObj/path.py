@@ -18,3 +18,8 @@ class TrustPath:
     def from_csv_file(cls, path):
         assert path.endswith('.csv'), "パスは.csvファイルを指定してください"
         return cls(path)
+    
+    @classmethod
+    def from_json_file(cls, path):
+        assert path.endswith('.json'), "パスは.jsonファイルを指定してください"
+        return cls(path)

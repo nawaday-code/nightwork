@@ -1,4 +1,9 @@
-import sys
+
+
+
+
+
+# import sys
 # sys.path.append('/Users/nawayuuki/ProgramSpace/nightwork/nightwork/src')
 # from src.Util.input import *
 
@@ -21,17 +26,17 @@ import sys
 
 
 # calender.pyのDateObjectクラスのget_month_datesメソッドのテスト
-from src.DataObj.calender import DateObject
-def print_month_dates(year, month):
-    date_obj = DateObject(year, month, [], [])
-    month_dates = date_obj.get_month_dates()
-    assert len(month_dates) > 0, "'get_month_dates' は空のリストを返しました"
-    for date in month_dates:
-        print(date)
+# from src.DataObj.calender import DateObject
+# def print_month_dates(year, month):
+#     date_obj = DateObject(year, month, [], [])
+#     month_dates = date_obj.get_month_dates()
+#     assert len(month_dates) > 0, "'get_month_dates' は空のリストを返しました"
+#     for date in month_dates:
+#         print(date)
 
-if __name__ == "__main__":
-    # test_input_methods()
-    print_month_dates(2022, 12)
-    print_month_dates(2023, 1)
-    print_month_dates(2023, 2)
+# if __name__ == "__main__":
+#     # test_input_methods()
+#     print_month_dates(2022, 12)
+#     print_month_dates(2023, 1)
+#     print_month_dates(2023, 2)
 
