@@ -4,7 +4,7 @@ import datetime
 # Read calendar.csv file and store its contents in an array
 calendar_data = []
 is_first_row = True
-with open('calendar.csv', newline='') as csvfile:
+with open('syukujitsu.csv', newline='') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
         if not is_first_row and row:
@@ -14,7 +14,16 @@ with open('calendar.csv', newline='') as csvfile:
         
 
 # Prompt for start_date and end_date
+print("*******************************************")
+print("勤務表で使用する休日ファイルを作成します。")
+print("カレンダーの原本は内閣府が発行する【syukujitsu.csv】です。")
+print("このデータは1955年の祝日から記載されているので、必要に応じてデータを削除してください。")
+print("データは1列目に日付、2列目に休日名となっています。")
+print("作成されるファイル名は【tokai-calendar.csv】です。")      
 print("カレンダー作成の開始日(YYYY/MM/DD)と終了日(YYYY/MM/DD)を入力してください。")
+print("*******************************************")
+print()
+
 start_date = input("開始日を入力 (YYYY/MM/DD): ")
 end_date = input("終了日を入力 (YYYY/MMDD): ")
 
