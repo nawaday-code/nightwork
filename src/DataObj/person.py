@@ -1,5 +1,15 @@
 
 
+class Modality:
+    #指定月のモダリティ
+    def __init__(self, modality):
+        assert isinstance(modality, str), "modalityはstr型でなければなりません"
+        self.__modality = modality
+
+    @property
+    def assigned(self):
+        return self.__modality
+
 class Skill:
     def __init__(self, modalities, status, skill_score):
         assert isinstance(modalities, str), "modalitiesはstr型でなければなりません"
@@ -77,13 +87,14 @@ class ImutableInfoList:
 
 
 class Person:
-    def __init__(self, imutableInfo, skills):
+    def __init__(self, imutableInfo, skills, modality):
         self.__uid = imutableInfo.uid
         self.__id = imutableInfo.id
         self.__staffname = imutableInfo.staffname
         self.__status = imutableInfo.status
         self.__authority = imutableInfo.authority
         self.__skills = skills.skill_list
+        self.__assigned_modality = modality.assigned
 
     @property
     def uid(self):
@@ -108,3 +119,8 @@ class Person:
     @property
     def skills(self):
         return self.__skills
+
+    @property
+    def assigned_modality(self):
+        return self.__assigned_modality
+
