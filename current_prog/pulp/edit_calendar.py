@@ -62,7 +62,7 @@ while current_date <= end_date:
         found = False
         # calendar_dataを検索し、同じ日付があるか調べる
         for data in calendar_data:
-            if data[0] == current_date.strftime("%Y/%m/%d"):
+            if datetime.datetime.strptime(data[0], "%Y/%m/%d").date() == current_date:
                 # 同じ日付があり、かつ休日名が空であれば追加
                 if data[1] == '':
                     print(len(data))
