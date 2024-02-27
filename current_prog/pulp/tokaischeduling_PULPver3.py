@@ -28,8 +28,9 @@ def calc_schedule():
     # Topened：診療日となる日にちの集合
     # Tclosed：休診日となる日にちの集合
     Tdict = {}
-    T = []; Tr = []; Tclosed = []; Topened = []; Tnext = []
+    T = []; Tr = []; Tclosed = []; Topened = []; tokai_calendar = set()
 
+    
     # 勤務の種類
     # W1 = ['A日', 'M日', 'C日', 'F日', 'A夜', 'M夜', 'C夜', '明', '日勤', '他勤', '休日', '休暇']
     # 0:A日->dA, 1:M日->dM, 2:C日->dC, 3:F日->dF, 
@@ -45,7 +46,8 @@ def calc_schedule():
             '例外':'Ex'}
     W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
     W2 = ['Ex']
-    W = W1 + W2
+    W3 = ['emp']
+    W = W1 + W2 + W3
 
     # 禁止シフトの集合
     Q = ['n','n','n']
@@ -208,7 +210,9 @@ def calc_schedule():
     i = 0
     for t in Tr:
         
-        if t in Topened:
+        if Tdict[t] in tokai_calendar:
+
+        # if t in Topened:
         
             # 診療日の日勤を設定人数以上で確保する・・・(6)
             model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= alpha[8][i]
@@ -226,6 +230,8 @@ def calc_schedule():
             # 休診日の休日人数を設定人数以上で確保する・・・(10)
             model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= alpha[10][i]
 
+        #'emp'は入らない
+        model += pulp.lpSum([x[n, t, 'emp'] for n in N]) == 0
         # 各夜勤・休日勤の人数を確保する
         for w in W[:7]:
             # スタッフ全員に対して人数を確保する・・・(8)
@@ -242,6 +248,9 @@ def calc_schedule():
 
     # 夜勤の翌日は明けにする・・・(14)
     model += pulp.lpSum([x[n, t, w] for n in N for t in Tr for w in W[4:7]]) == x[n, (t+1), W[7]]
+
+    # 来月1日の勤務を割り当てる
+    # model += pulp.lpSum([x[n, T[-1], w] for n in Nr ]) == alpha[w][t[-1]]
 
     # 前月分の勤務を入力
     for n, t, w in Fp:

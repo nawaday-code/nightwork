@@ -78,7 +78,24 @@ def make_Ndum(num):
         Ndum.append(number + i)
 
     return Ndum 
- 
+
+def read_tokai_calendar():
+    # /////////////////////////////////////////////////////////////////////////////////////
+    cal = set()
+    dataDir = config.readSettingJson("DATA_DIR")
+    path = os.path.join(dataDir,'tokai-calendar.csv')
+    with open(path, encoding='cp932', newline='') as f:
+        reader = csv.reader(f)
+        # next(reader)  # CSVのヘッダーを飛ばす
+        for row in reader:
+            day_str, name = row[0], row[1]
+            day = datetime.strptime(day_str, '%Y/%m/%d')
+            day_str = datetime.strftime(day, '%Y-%m-%d')
+            cal.add(day)
+
+    return cal
+
+
 class JapanHoliday:
     """
     内閣府が公表している「平成29年（2017年）から平成31年（2019年）国民の祝日等
