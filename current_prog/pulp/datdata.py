@@ -17,9 +17,15 @@ class DatData:
         
         self.dat_dir = config.readSettingJson('DATA_DIR')
         self.work2pulp_dict = Wdict
-        self.pulpvar2num = { 'da':0, 'dm':1, 'dc':2, 'df':3, 'na':4, 'nm':5, 'nc':6, 'nn':7, 'dw':8, 'ew':9, 'do':10, 'ho':11, 'Ex':12, 'em':13 }
-        self.pulpvar2num = {'mr':0, 'tv':1, 'ks':2, 'nm':3, 'ag':4, 'rt':5, 'xp':6, 'ct':7, 'xo':8, 'mg':9, 'mt':10, 'fr':11}
-        
+        # self.pulpvar2num = { 'da':0, 'dm':1, 'dc':2, 'df':3, 'na':4, 'nm':5, 'nc':6, 'nn':7, 'dw':8, 'ew':9, 'do':10, 'ho':11, 'Ex':12, 'em':13 }
+        # self.modality2num = {'mr':0, 'tv':1, 'ks':2, 'nm':3, 'ag':4, 'rt':5, 'xp':6, 'ct':7, 'xo':8, 'mg':9, 'mt':10, 'fr':11}
+        self._pulpvar_list =['da', 'dm', 'dc', 'df', 'na', 'nm', 'nc', 'nn', 'dw', 'ew', 'do', 'ho', 'Ex', 'em']
+        self._modality_list = ['mr', 'tv', 'ks', 'nm', 'ag', 'rt', 'xp', 'ct', 'xo', 'mg', 'mt', 'fr']
+        self._Ndum = [900, 901, 902, 903, 904, 905, 906, 907, 908, 909]
+        self._Nr, self._Gm, self._Core = self._read_Nr_Gm_Core()
+        self._Nnight, self._Ndaily, self._Ns = self._read_skill()
+        self._Tdict, self._T, self._Tr = self._schedule_T()
+
     # 辞書の値からキーを抽出
     def get_key_from_value(self, dicts, val):
         keys = [k for k, v in dicts.items() if v == val]
@@ -28,9 +34,17 @@ class DatData:
         return None
 
     @property
+    def modality_list(self):
+        return self._modality_list
+    
+    @property
+    def pulpvar_list(self):
+        return self._pulpvar_list
+
+    @property
     def convert_table(self, filepath='converttable.dat'):
         dict = {}
-        path = os.path.join(self.dat_dir, 'converttable.dat')
+        path = os.path.join(self.dat_dir, filepath)
 
         with open(path, encoding="utf-8_sig") as f:
             for line in f:
@@ -41,7 +55,7 @@ class DatData:
     @property
     def shift2num_dict(self, filepath='converttable.dat'):
         dict = {}
-        path = os.path.join(self.dat_dir, 'converttable.dat')
+        path = os.path.join(self.dat_dir, filepath)
 
         with open(path, encoding="utf-8_sig") as f:
             for line in f:
@@ -64,7 +78,7 @@ class DatData:
             required_numbers = []
             for i in arr[1:]:
                 required_numbers.append(int(i))
-            alpha.insert(int(self.pulpvar2num[arr[0].lower()]), required_numbers)
+            alpha.insert(self._pulpvar_list.index(arr[0].lower()), required_numbers)
         
         return alpha
     @property
@@ -83,7 +97,7 @@ class DatData:
             lowLimit = []
             for i in arr[1:]:
                 lowLimit.append(int(i))
-            beta.insert(self.pulpvar2num[arr[0].lower()], lowLimit)
+            beta.insert(self._modality_list.index(arr[0].lower()), lowLimit)
 
         return beta
         
@@ -102,7 +116,7 @@ class DatData:
             core = []
             for i in arr[1:]:
                 core.append(int(i))
-            gamma.insert(self.pulpvar2num[arr[0].lower()], core)    
+            gamma.insert(self._modality_list.index(arr[0].lower()), core)    
 
         return gamma            
 
@@ -156,7 +170,7 @@ class DatData:
             lowLimit = []
             for i in arr[1:]:
                 lowLimit.append(int(i))
-            constants.insert(self.pulpvar2num[arr[0].lower()], lowLimit)
+            constants.insert(self._modality_list.index(arr[0].lower()), lowLimit)
 
         return constants
 
@@ -172,42 +186,157 @@ class DatData:
                     dict.setdefault(key, value)
         return dict
 
-
-    def make_T(self):
-        mydate = datetime.strptime(self.configvar['date'][0], '%Y/%m/%d')
-        consecutivework = int(self.configvar['iota'][0])
+    def _schedule_T(self):
         Tdict = {}
-        T = []; Tr = []; Tclosed = []; Topened = []; Toutput = []
-        pre = mydate - timedelta(days = consecutivework)
-        post = mydate + relativedelta(months = 1)
-
-        for d in range((post - pre).days + 1):
-            strd = datetime.strftime(pre + timedelta(d), '%Y-%m-%d')
-            Tdict[d] = strd
-            T.append(d)
-
-        # pre = mydate
-        # post = post           
-        # for d in range((post - pre).days + 1):
-        #     strd = datetime.strftime(pre + timedelta(d), '%Y-%m-%d')
-        #     day = self.get_key_from_value(Tdict, strd)
-        #     Toutput.append(day)
+        T = [];
+        Tr = [] 
+        first_day_of_month = datetime.strptime(self.configvar['date'][0], '%Y/%m/%d')
+        consecutivework = int(self.configvar['iota'][0])
+        current_date = first_day_of_month - timedelta(days = consecutivework)
+        end_date = first_day_of_month + relativedelta(months = 1)
         
-        # pre = mydate
-        # post = post - timedelta(days=1)
-        # for d in range((post - pre).days + 1):
-        #     strd = datetime.strftime(pre + timedelta(d), '%Y-%m-%d')
-        #     day = self.get_key_from_value(Tdict, strd)
-        #     Tr.append(day)
-        #     holiday = JapanHoliday()
-        #     if holiday.is_holiday(strd):
-        #         Tclosed.append(day)
-        #     else:
-        #         Topened.append(day)
+        i = 0
+        while current_date <= end_date:
+            Tdict[current_date] = i
+            T.append(current_date)
+            if first_day_of_month <= current_date < end_date:
+                Tr.append(current_date)
+            current_date += timedelta(days=1)
+            i += 1
+
+        return Tdict, T, Tr
+    
+    @property
+    def staff_list(self, filepath='staffinfo.dat'):
+        dict = {}
+        path = os.path.join(self.dat_dir, filepath)
+
+        with open(path, encoding="utf-8_sig") as f:
+            for line in f:
+                line = line.strip()
+                uid, id, name = line.split(',')
+                dict[int(uid)] = {'uid': int(uid), 'id': id, 'name': name}
+        return dict        
+
+    def _read_Nr_Gm_Core(self, filepath='Nrdeptcore.dat'):
+        target_dept = ['MR', 'TV', 'KS', 'NM', 'AG', 'RT', 'XP', 'CT', 'XO']
+        non_target_dept = ['FR', 'NF', 'MG', 'MT']
+        _Nr = []
+        _Gm = [[] for _ in range(10)]
+        _Core = [[] for _ in range(9)]
+
+        path = os.path.join(self.dat_dir, filepath)
+
+        with open(path, encoding="utf-8_sig") as f:
+            for line in f:
+                arr = line.strip().split(',')
+                uid = int(arr[0])
+                dept = arr[1].upper()
+
+                if dept != 'AS' and arr[3] != 'ET':
+                    _Nr.append(uid)
+
+                if dept in target_dept:
+                    index = target_dept.index(dept)
+                    _Gm[index].append(uid)
+                    if arr[index + 3] == '6':
+                        _Core[index].append(uid)
+
+                if dept in non_target_dept:
+                    _Gm[9].append(uid)
+
+        for n in self._Ndum:
+            for i in range(10):
+                _Gm[i].append(n)
+                if i < 9:
+                    _Core[i].append(n)
+
+        return sorted(_Nr), [sorted(m) for m in _Gm], [sorted(m) for m in _Core]
+    
+    def _read_skill(self, filepath='skill.dat'):
+        _Nnight = []
+        _Ndaily = []
+        _Ns = [[] for _ in range(7)]
 
 
-        return Tdict, T, Tr#, Tclosed, Topened, Toutput
-datData = DatData()
+        path = os.path.join(self.dat_dir, filepath)
 
-d= datData.tokai_calendar
-print(d)
+        with open(path, encoding="utf-8_sig") as f:
+            for line in f:
+                arr = line.strip().split(',')
+                uid = int(arr[0])
+
+                if arr[5] == '2':
+                    _Nnight.append(uid)
+                if arr[6] == '2':
+                    _Ndaily.append(uid)
+
+                for i in range(1, 5):
+                    if arr[i] == '2' and arr[6] == '2':
+                        _Ns[i-1].append(uid)
+
+                for i in range(1, 4):
+                    if arr[i] == '2' and arr[5] == '2':
+                        _Ns[i+4].append(uid)
+
+        for n in self._Ndum:
+            for i in range(7):
+                _Ns[i].append(n)
+
+        return sorted(_Nnight), sorted(_Ndaily), [sorted(l) for l in _Ns]
+
+
+    @property
+    def Nr(self):
+        return self._Nr
+    
+    @property
+    def N(self):
+        return self._Nr + self._Ndum
+    
+    @property
+    def Gm(self):
+        return self._Gm
+    
+    @property
+    def Core(self):
+        return self._Core
+    
+    @property
+    def Nnight(self):
+        return self._Nnight
+    
+    @property
+    def Ndaily(self):
+        return self._Ndaily
+    
+    @property
+    def Nboth(self):
+        return list(set(self._Nnight) | set(self._Ndaily))
+    
+    @property
+    def Ns(self):
+        return self._Ns
+    
+    @property
+    def Tdict(self):
+        return self._Tdict
+    @property
+    def T(self):
+        return self._T
+    
+    @property
+    def Tr(self):
+        return self._Tr
+
+
+
+# datData = DatData()
+
+# d= datData.T
+# t_cal = datData.tokai_calendar
+
+# for date in d:
+
+#     if date in t_cal.keys():
+#         print(str(date) + '_closed')

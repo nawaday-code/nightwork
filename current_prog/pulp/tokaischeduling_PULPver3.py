@@ -6,31 +6,43 @@ import readdata as rd
 import tokaifunc as tfunc
 import config
 import time
-
+import datdata 
 def calc_schedule():
 
-    
+    dat = datdata.DatData()
+
     # 変数
     # N = Nr + Ndummy 
     # Nr：スケジュールの対象となる技師の集合
     # Ndaily：休日勤が可能な技師集合　Nnight：夜勤が可能な技師集合　Nboth：どちらかできる技師の集合
     # Ns：各休日勤・夜勤が可能な技師集合
-    staff = {}
-    N = []; Nr = []; Ndum = []; Ndaily = []; Nnight = []; Nboth = []; Ns = []
+    # staff = {}
+    # N = []; Nr = []; Ndum = []; Ndaily = []; Nnight = []; Nboth = []; Ns = []
+    staff = dat.staff_list
+    N = dat.N; 
+    Nr = dat.Nr 
+    Ndaily = dat.Ndaily
+    Nnight = dat.Nnight
+    Ns = dat.Ns
 
     # G：モダリティグループに属する技師集合
     # Core：モダリティリーダーを任せることのできる技師集合
     # G = 0:MR, 1:TV, 2:HT, 3:MN, 4:XA, 5:RT, 6:XP, 7:CT, 8:XO, 9:etc
-    G = []; Core = []
+    # G = []; Core = []
+    Gm = dat.Gm
+    Core = dat.Core
 
     # T：日にちの集合（前月13日分と次月1日分を含む）
     # Tr：スケジュールの対象となる日にちの集合
     # Topened：診療日となる日にちの集合
     # Tclosed：休診日となる日にちの集合
-    Tdict = {}
-    T = []; Tr = []; Tclosed = []; Topened = []; tokai_calendar = set()
+    # Tdict = {}
+    # T = []; Tr = []; Tclosed = []; Topened = []
+    Tdict = dat.Tdict
+    T = dat.T
+    Tr = dat.Tr
+    tokai_calendar = dat.tokai_calendar
 
-    
     # 勤務の種類
     # W1 = ['A日', 'M日', 'C日', 'F日', 'A夜', 'M夜', 'C夜', '明', '日勤', '他勤', '休日', '休暇']
     # 0:A日->dA, 1:M日->dM, 2:C日->dC, 3:F日->dF, 
@@ -54,6 +66,12 @@ def calc_schedule():
 
     MAXCONSECUTIVEWORKS = 12        #法律上可能な連続勤務日数
     REQUIRED_NUM_OF_COLOSED_DAY = 11 #休診日に必要な人数（日勤、夜勤、明け）
+
+    pulpvar_list = dat.pulpvar_list
+
+    modality_list = dat.modality_list
+
+    
     # 日付ごとの制約条件変数
     # alpha[work][date]
     # alpha 0:A日,1:M日,2:C日,3:F日,4:A夜,5:M夜,6:C夜,7:明,8:日勤,9:他勤,10:休日,11:休暇
@@ -215,7 +233,9 @@ def calc_schedule():
         # if t in Topened:
         
             # 診療日の日勤を設定人数以上で確保する・・・(6)
-            model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= alpha[8][i]
+            # model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= alpha[8][i]   #indexをdat.pulpval_list.index('dA')に変更する
+            model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= alpha[pulpvar_list.index('dW')][Tdict[t]]   #可読性が高い気がする
+            
             # 診療日の休日人数を設定人数以下で確保する・・・(9)
             model += pulp.lpSum([x[n, t, 'do'] for n in N]) <= alpha[10][i]
             
@@ -322,38 +342,38 @@ def calc_schedule():
 
 
 
-# ***********************************************************************
-# 実行
-# ***********************************************************************
+# # ***********************************************************************
+# # 実行
+# # ***********************************************************************
 
-    print(f'create at {createDate}')
-    print(f'calculatin time : {calctime} s  start....')    
+#     print(f'create at {createDate}')
+#     print(f'calculatin time : {calctime} s  start....')    
 
-    cbcpath = config.readSettingJson("CBC_PATH")
-    pulp.LpStatus[model.solve(pulp.COIN_CMD(timeLimit=calctime, path=cbcpath))]
+#     cbcpath = config.readSettingJson("CBC_PATH")
+#     pulp.LpStatus[model.solve(pulp.COIN_CMD(timeLimit=calctime, path=cbcpath))]
     
-    print(pulp.LpStatus[model.status])
+#     print(pulp.LpStatus[model.status])
     
 
-# ***********************************************************************
-# 出力
-# ***********************************************************************
-    # data = convert_scheduling_data(N, staff, G, Tr, Tclosed, Tdict, W, x)
-    data = rd.read_outcome(N, Toutput, Tdict, W, x, createDate)
-    # data = output_scheduling_data(N, Tr, Tdict, W, x)
-    # xl.output_data(N, staff, G, Tr, Tclosed, Tdict, W, x)
-    try:
-        dataDir = config.readSettingJson("DATA_DIR")
-        outputPath = os.path.join(dataDir,'shift.dat')
-        with open(outputPath, 'w', encoding='utf-8') as f:
-            writer = csv.writer(f, lineterminator='\n')
-            writer.writerow(['#' + datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S') + ',' + pulp.LpStatus[model.status]])
-            writer.writerows(data)
-    except FileNotFoundError as e:
-        print(e)
-    except csv.Error as e:
-        print(e)
-    return pulp.LpStatus[model.status], data
+# # ***********************************************************************
+# # 出力
+# # ***********************************************************************
+#     # data = convert_scheduling_data(N, staff, G, Tr, Tclosed, Tdict, W, x)
+#     data = rd.read_outcome(N, Toutput, Tdict, W, x, createDate)
+#     # data = output_scheduling_data(N, Tr, Tdict, W, x)
+#     # xl.output_data(N, staff, G, Tr, Tclosed, Tdict, W, x)
+#     try:
+#         dataDir = config.readSettingJson("DATA_DIR")
+#         outputPath = os.path.join(dataDir,'shift.dat')
+#         with open(outputPath, 'w', encoding='utf-8') as f:
+#             writer = csv.writer(f, lineterminator='\n')
+#             writer.writerow(['#' + datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S') + ',' + pulp.LpStatus[model.status]])
+#             writer.writerows(data)
+#     except FileNotFoundError as e:
+#         print(e)
+#     except csv.Error as e:
+#         print(e)
+#     return pulp.LpStatus[model.status], data
 
 def convertConfig(data):
 
