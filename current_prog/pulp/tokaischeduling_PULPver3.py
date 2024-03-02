@@ -23,7 +23,9 @@ def calc_schedule():
     Nr = dat.Nr 
     Ndaily = dat.Ndaily
     Nnight = dat.Nnight
+    Nboth = dat.Nboth
     Ns = dat.Ns
+    Ndum = dat._Ndum
 
     # G：モダリティグループに属する技師集合
     # Core：モダリティリーダーを任せることのできる技師集合
@@ -32,17 +34,19 @@ def calc_schedule():
     Gm = dat.Gm
     Core = dat.Core
 
+
     # T：日にちの集合（前月13日分と次月1日分を含む）
     # Tr：スケジュールの対象となる日にちの集合
     # Topened：診療日となる日にちの集合
     # Tclosed：休診日となる日にちの集合
-    # Tdict = {}
+    # T_dict = {}
     # T = []; Tr = []; Tclosed = []; Topened = []
-    Tdict = dat.Tdict
+    T_dict = dat.T_dict
     T = dat.T
+    Tr_dict = dat.Tr_dict
     Tr = dat.Tr
     tokai_calendar = dat.tokai_calendar
-
+    
     # 勤務の種類
     # W1 = ['A日', 'M日', 'C日', 'F日', 'A夜', 'M夜', 'C夜', '明', '日勤', '他勤', '休日', '休暇']
     # 0:A日->dA, 1:M日->dM, 2:C日->dC, 3:F日->dF, 
@@ -56,9 +60,12 @@ def calc_schedule():
             'MG':'dW','MT':'dW','CT':'dW','XO':'dW','FR':'dW','NF':'dW','AS':'dW','ET':'dW','半':'dW',
             '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho',
             '例外':'Ex'}
-    W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
-    W2 = ['Ex']
-    W3 = ['emp']
+    # W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
+    # W2 = ['Ex']
+    # W3 = ['emp']
+    W1 = dat.W1_list
+    W2 = dat.W2_list
+    W3 = dat.W3_list
     W = W1 + W2 + W3
 
     # 禁止シフトの集合
@@ -79,28 +86,32 @@ def calc_schedule():
     # beta 0:MR, 1:TV, 2:HT, 3:MN, 4:XA, 5:RT, 6:XP, 7:CT, 8:XO, 9:MG, 10:MT, 11:FR/NF
     # gamma[modality][date]
     # gamma 0:MR, 1:TV, 2:HT, 3:MN, 4:XA, 5:RT, 6:XP, 7:CT, 8:XO, 9:MG, 10:MT, 11:FR/NF
-    alpha = []; beta = []; gamma = []
+    alpha = dat.alpha
+    beta = dat.beta
+    gamma = dat.gamma
+    
+    # alpha = []; beta = []; gamma = []
 
-    # 前月分の勤務
-    Fprev = []; Fp = []
-    # 今月分の勤務希望
-    Frequ = []; Fr = []
-    # 休日希望
-    Frequ_dayoff = []; Frd = []
+    # # 前月分の勤務
+    # Fprev = []; Fp = []
+    # # 今月分の勤務希望
+    # Frequ = []; Fr = []
+    # # 休日希望
+    # Frequ_dayoff = []; Frd = []
 
-    staff = rd.read_staff_info()
+    # staff = rd.read_staff_info()
 
-    Ndum = tfunc.make_Ndum(10)
+    # Ndum = tfunc.make_Ndum(10)
 
-    Nr, G, Core = rd.read_Nr_Gm_Core(Ndum)
-    Nnight, Ndaily, Ns = rd.read_skill(Ndum)        #Nnight,Ndailyにはdummyはいない。
-    Nboth = list(set(Nnight) | set(Ndaily))
+    # Nr, G, Core = rd.read_Nr_Gm_Core(Ndum)
+    # Nnight, Ndaily, Ns = rd.read_skill(Ndum)        #Nnight,Ndailyにはdummyはいない。
+    # Nboth = list(set(Nnight) | set(Ndaily))
 
-    N = Nr + Ndum
+    # N = Nr + Ndum
 
-    alpha = rd.read_alpha()
-    beta = rd.read_beta()
-    gamma = rd.read_gamma()
+    # alpha = rd.read_alpha()
+    # beta = rd.read_beta()
+    # gamma = rd.read_gamma()
 
     # createDate:作成日時 epsilon:夜勤日勤回数の上限 iota:連続勤務日数 kappa:所定労働時間
     # myu:休日数 nyu1,2,3:連休数 rho:休日数の下限 lam:勤務間隔の荷重係数
@@ -204,7 +215,7 @@ def calc_schedule():
             + lam[4] * pulp.lpSum([work_interval4[n, t] for n in Nboth for t in Tr]) == total_work_interval
     
 # 希望勤務がどの程度実現できたか？
-    model += lam[9] * (len(Frequ_dayoff) - pulp.lpSum([x[n, t, 'do'] for n, t, w in Frequ_dayoff])) == req_dayoff
+    model += lam[9] * (len(Frequ_dayoff) - pulp.lpSum([x[n, t, w] for n, t, w in Frequ_dayoff])) == req_dayoff   # wはすべて'do'となっている
 
 # 連休の取得割合
     model += lam[6] * pulp.lpSum([defaultTwoConsecutiveHolidays - total_two_consecutive_holidays[n] for n in Nboth]) \
@@ -228,34 +239,40 @@ def calc_schedule():
     i = 0
     for t in Tr:
         
-        if Tdict[t] in tokai_calendar:
+        if not t in tokai_calendar.keys():
 
         # if t in Topened:
         
             # 診療日の日勤を設定人数以上で確保する・・・(6)
             # model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= alpha[8][i]   #indexをdat.pulpval_list.index('dA')に変更する
-            model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= alpha[pulpvar_list.index('dW')][Tdict[t]]   #可読性が高い気がする
+            model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= alpha[W.index('dW')][Tr_dict[t]]   #可読性が高い気がする
             
             # 診療日の休日人数を設定人数以下で確保する・・・(9)
-            model += pulp.lpSum([x[n, t, 'do'] for n in N]) <= alpha[10][i]
+            model += pulp.lpSum([x[n, t, 'do'] for n in N]) <= alpha[W.index('do')][Tr_dict[t]]
             
-            for m in range(len(G)-1):
-                # 正規スタッフ数を設定人数以上で確保・・・(11)
-                model += pulp.lpSum([x[n, t, 'dW'] for n in G[m]]) >= beta[m][i]
-                # 責任者クラスを設定人数以上で確保・・・(12)
-                model += pulp.lpSum([x[n, t, 'dW'] for n in Core[m]]) >= gamma[m][i]
+            # for m in range(len(Gm)-1):
+            #     # 正規スタッフ数を設定人数以上で確保・・・(11)
+            #     model += pulp.lpSum([x[n, t, 'dW'] for n in Gm[m]]) >= beta[m][i]
+            #     # 責任者クラスを設定人数以上で確保・・・(12)
+            #     model += pulp.lpSum([x[n, t, 'dW'] for n in Core[m]]) >= gamma[m][i]
+            for m in modality_list:
+                model += pulp.lpSum([x[n, t, 'dw'] for n in Gm[modality_list.index(m)]]) >= beta[modality_list.index(m)][Tr_dict[t]]
+                model += pulp.lpSum([x[n, t, 'dw'] for n in Core[modality_list.index(m)]]) >= gamma[modality_list.index(m)][Tr_dict[t]]
         else:
             # 休診日の日勤は設定人数分を確保する・・・(7)
-            model += pulp.lpSum([x[n, t, 'dW'] for n in N]) == alpha[8][i]
+            # model += pulp.lpSum([x[n, t, 'dW'] for n in N]) == alpha[8][i]
+            model += pulp.lpSum([x[n, t, 'dW'] for n in N]) == alpha[W.index('dW')][Tr_dict[t]]
             # 休診日の休日人数を設定人数以上で確保する・・・(10)
-            model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= alpha[10][i]
+            # model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= alpha[10][i]
+            model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= alpha[W.index('do')][Tr_dict[t]]
 
         #'emp'は入らない
         model += pulp.lpSum([x[n, t, 'emp'] for n in N]) == 0
         # 各夜勤・休日勤の人数を確保する
         for w in W[:7]:
             # スタッフ全員に対して人数を確保する・・・(8)
-            model += pulp.lpSum([x[n, t, w] for n in N]) == alpha[W.index(w)][i]
+            # model += pulp.lpSum([x[n, t, w] for n in N]) == alpha[W.index(w)][i]
+            model += pulp.lpSum([x[n, t, w] for n in N]) == alpha[W.index(w)][Tr_dict[t]]
             # 対応可能なスタッフに各勤務を割り当てる・・・(13)(15)
             model += pulp.lpSum([x[n, t, w] for n in Ns[W.index(w)]]) == alpha[W.index(w)][i]
         # 明けの人数を確保する・・・(8)
@@ -358,10 +375,10 @@ def calc_schedule():
 # # ***********************************************************************
 # # 出力
 # # ***********************************************************************
-#     # data = convert_scheduling_data(N, staff, G, Tr, Tclosed, Tdict, W, x)
-#     data = rd.read_outcome(N, Toutput, Tdict, W, x, createDate)
-#     # data = output_scheduling_data(N, Tr, Tdict, W, x)
-#     # xl.output_data(N, staff, G, Tr, Tclosed, Tdict, W, x)
+#     # data = convert_scheduling_data(N, staff, G, Tr, Tclosed, T_dict, W, x)
+#     data = rd.read_outcome(N, Toutput, T_dict, W, x, createDate)
+#     # data = output_scheduling_data(N, Tr, T_dict, W, x)
+#     # xl.output_data(N, staff, G, Tr, Tclosed, T_dict, W, x)
 #     try:
 #         dataDir = config.readSettingJson("DATA_DIR")
 #         outputPath = os.path.join(dataDir,'shift.dat')
@@ -391,7 +408,7 @@ def convertConfig(data):
     return createDate, epsilon, iota, kappa, myu, nyu, rho, lam
 
 
-def output_scheduling_data(N, Tr, Tdict, W, x):
+def output_scheduling_data(N, Tr, T_dict, W, x):
     # W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
     # W2 = ['Ex']
     invW = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'','eW':'他','do':'休','ho':'特','Ex':'ダ'}
@@ -404,12 +421,12 @@ def output_scheduling_data(N, Tr, Tdict, W, x):
             for w in W:
                 if x[n, t, w].value():
                     shift.append(n)
-                    shift.append(Tdict[t])
+                    shift.append(T_dict[t])
                     shift.append(invW[w])
                     buf.append(shift)
     return buf                
 
-def convert_scheduling_data(N, staff, G, Tr, Tclosed, Tdict, W, x):
+def convert_scheduling_data(N, staff, G, Tr, Tclosed, T_dict, W, x):
     # W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
     # W2 = ['Ex']
     invW = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'','eW':'他','do':'休','ho':'特','Ex':'ダ'}
@@ -438,7 +455,7 @@ def convert_scheduling_data(N, staff, G, Tr, Tclosed, Tdict, W, x):
                 if x[n, t, w].value():
                     for i in staff_info:
                         shift.append(i)
-                    shift.append(Tdict[t])
+                    shift.append(T_dict[t])
                     shift.append(invW[w])
                     buf.append(shift)
     return buf
