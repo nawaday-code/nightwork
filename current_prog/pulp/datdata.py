@@ -28,6 +28,10 @@ class DatData:
         self._Nr, self._Gm, self._Core = self._read_Nr_Gm_Core()
         self._Nnight, self._Ndaily, self._Ns = self._read_skill()
         self._T_dict, self._T, self._Tr_dict, self._Tr = self._schedule_T()
+        self._F_previous = self.read_previous_request('previous.dat')
+        self._F_request = self.read_previous_request('request.dat')
+        self._F_request_dayoff = self.read_previous_request('request_dayoff.dat')
+        self._F_request_next_month = self.read_previous_request('request_nextmonth.dat')
 
     # 辞書の値からキーを抽出
     def get_key_from_value(self, dicts, val):
@@ -147,30 +151,6 @@ class DatData:
                 d[key] = value
         return d
     
-    @property
-    def previous(self, filepath='previous.dat'):
-        d = []
-        Fprev = []
-        configvar = self.configvar
-        dict = self.convert_table
-        date = datetime.strptime(configvar['date'][0], '%Y/%m/%d')
-        path = os.path.join(self.dat_dir, filepath)
-        with open(path, encoding='utf-8_sig') as f:
-            for line in f:
-                line = line.strip()
-                d.append(list(line.split(',')))
-        
-            for arr in d:
-                prev = []
-                prev.append(int(arr[0]))
-                day = datetime.strftime(date + timedelta(days=int(arr[1])), '%Y/%m/%d')
-                prev.append(day)
-                prev.append(self.get_key_from_value(dict, int(arr[2])))
-                Fprev.append(prev)
-        
-        return Fprev    
-
-
     @property
     def modalityconstants(self, filepath='modalityconstants.dat'):
         d = []    
@@ -301,6 +281,26 @@ class DatData:
 
         return sorted(_Nnight), sorted(_Ndaily), [sorted(l) for l in _Ns]
 
+    def read_previous_request(self, filepath):
+        data = []
+        _F_list = []
+        configvar = self.configvar
+        dict = self.convert_table
+        date = datetime.strptime(configvar['date'][0], '%Y/%m/%d')
+        path = os.path.join(self.dat_dir, filepath)
+        with open(path, encoding='utf-8_sig') as f:
+            for line in f:
+                line = line.strip()
+                data.append(list(line.split(',')))    
+            for d in data:
+                _list = []
+                _list.append(int(d[0]))
+                day = datetime.strftime(date + timedelta(days=int(d[1])), '%Y/%m/%d')
+                _list.append(day)
+                _list.append(self.get_key_from_value(dict, int(d[2])))
+                _F_list.append(_list)
+        
+        return _F_list                
 
     @property
     def Nr(self):
@@ -348,7 +348,22 @@ class DatData:
     def Tr(self):
         return self._Tr
 
+    @property
+    def F_previous(self):
+        return self._F_previous
 
+    @property
+    def F_request(self):
+        return self._F_request
+
+    @property
+    def F_request_dayoff(self):
+        return self._F_request_dayoff
+
+    @property
+    def F_request_next_month(self):
+        return self._F_request_next_month
+    
 
 datData = DatData()
 

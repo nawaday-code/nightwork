@@ -53,13 +53,13 @@ def calc_schedule():
     # 4:A夜->nA, 5:M夜->nM, 6:C夜->nC, 7:明 ->n,
     # 8:日勤->'', 9:他勤->e, 10:休日->/, 12:休暇->#
     # 初回作成時の明けなし宿直に関しては明けをつけなくても大丈夫。夜勤・明けの制約は作成月のみ
-    Wdict = {'A日':'dA', 'M日':'dM', 'C日':'dC', 'F日':'dF', 'A夜':'nA', 'M夜':'nM', 'C夜':'nC', '明':'nn',
-            'A宿':'nA', 'M宿':'nM', 'C宿':'nC',
-            '日':'dW', '勤':'dW', '援':'eW', '張':'eW', 
-            'RT':'dW','MR':'dW','TV':'dW','KS':'dW','NM':'dW', 'AG':'dW','XP':'dW',
-            'MG':'dW','MT':'dW','CT':'dW','XO':'dW','FR':'dW','NF':'dW','AS':'dW','ET':'dW','半':'dW',
-            '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho',
-            '例外':'Ex'}
+    # Wdict = {'A日':'dA', 'M日':'dM', 'C日':'dC', 'F日':'dF', 'A夜':'nA', 'M夜':'nM', 'C夜':'nC', '明':'nn',
+    #         'A宿':'nA', 'M宿':'nM', 'C宿':'nC',
+    #         '日':'dW', '勤':'dW', '援':'eW', '張':'eW', 
+    #         'RT':'dW','MR':'dW','TV':'dW','KS':'dW','NM':'dW', 'AG':'dW','XP':'dW',
+    #         'MG':'dW','MT':'dW','CT':'dW','XO':'dW','FR':'dW','NF':'dW','AS':'dW','ET':'dW','半':'dW',
+    #         '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho',
+    #         '例外':'Ex'}
     # W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
     # W2 = ['Ex']
     # W3 = ['emp']
@@ -98,7 +98,10 @@ def calc_schedule():
     # Frequ = []; Fr = []
     # # 休日希望
     # Frequ_dayoff = []; Frd = []
-
+    F_previous = dat.F_previous
+    F_request = dat.F_request
+    F_request_dayoff = dat.F_request_dayoff
+    F_request_next_month = dat.F_request_next_month
     # staff = rd.read_staff_info()
 
     # Ndum = tfunc.make_Ndum(10)
@@ -127,11 +130,11 @@ def calc_schedule():
     mean_works_in_closedday = len(Tclosed) * REQUIRED_NUM_OF_COLOSED_DAY / len(Nboth)
     Tdict, T, Tr, Tclosed, Topened, Toutput = tfunc.make_T(createDate, iota)
 
-    Fprev = rd.read_previous(createDate)
-    Frequ = rd.read_request(createDate)
+    # Fprev = rd.read_previous(createDate)
+    # Frequ = rd.read_request(createDate)
 
-    Fp = tfunc.reformat_F(Fprev, Wdict, Tdict)
-    Fr = tfunc.reformat_F(Frequ, Wdict, Tdict)
+    # Fp = tfunc.reformat_F(Fprev, Wdict, Tdict)
+    # Fr = tfunc.reformat_F(Frequ, Wdict, Tdict)
 
 
 # ***********************************************************************
@@ -215,7 +218,7 @@ def calc_schedule():
             + lam[4] * pulp.lpSum([work_interval4[n, t] for n in Nboth for t in Tr]) == total_work_interval
     
 # 希望勤務がどの程度実現できたか？
-    model += lam[9] * (len(Frequ_dayoff) - pulp.lpSum([x[n, t, w] for n, t, w in Frequ_dayoff])) == req_dayoff   # wはすべて'do'となっている
+    model += lam[9] * (len(F_request_dayoff) - pulp.lpSum([x[n, t, w] for n, t, w in F_request_dayoff])) == req_dayoff   # wはすべて'do'となっている
 
 # 連休の取得割合
     model += lam[6] * pulp.lpSum([defaultTwoConsecutiveHolidays - total_two_consecutive_holidays[n] for n in Nboth]) \
@@ -290,12 +293,13 @@ def calc_schedule():
     # model += pulp.lpSum([x[n, T[-1], w] for n in Nr ]) == alpha[w][t[-1]]
 
     # 前月分の勤務を入力
-    for n, t, w in Fp:
+    for n, t, w in F_previous:
         model += x[n, t, w] == 1
     # 勤務希望を叶える・・・(16)
-    for n, t, w in Fr:    
+    for n, t, w in F_request:    
         model += x[n, t, w] == 1
 
+    
     for n in Nr: 
         for t in Tr:
             # 連続勤務日数を13日以内にする・・・(18)
