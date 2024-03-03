@@ -1,24 +1,10 @@
-from src.DataObj.settings import Settings
-from src.DataObj.path import TrustPath
-from src.Util.input.access import AccessDBReader
-
+# access_patl = TrustPath.from_accers_file("C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\shifttable.accdb")
+# setting_path = TrustPath.from_json_file("C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\settings\\settings.json")
 import datetime
+from src.Util.infobox import InfoBOX
 
-access_path = TrustPath.from_access_file("C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\shifttable.accdb")
-setting_path = TrustPath.from_json_file("C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\settings\\settings.json")
+infobox = InfoBOX("C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\shifttable.accdb", "C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\settings\\settings.json", "C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\test.csv", target_year=2023, target_month=12, start_date=datetime.date(2023,11,15), end_date=datetime.date(2024,1,1))
 
-target_date = datetime.date(2023, 12, 1)
-
-member = AccessDBReader.read_member(target_date.year, target_date.month, access_path)
-shifts = AccessDBReader.read_shifts(member,target_date, access_path)
-settings = Settings(setting_path)
-
-
-
-
-
-# import sys
-# sys.path.append('/Users/nawayuuki/ProgramSpace/nightwork/nightwork/src')
 # from src.Util.input import *
 
 # def test_input_methods():

@@ -44,13 +44,10 @@ class AccessDBReader:
 
     @staticmethod
     #staffの勤務情報を取得する
-    def read_shifts(member, targetDate, db_path_obj):
+    def read_shifts(member, start_date, end_date, db_path_obj):
         
         conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + db_path_obj.value + ';PWD=' + DB_PASSWORD + ';')
         cursor = conn.cursor()
-        
-        start_date = targetDate.replace(day=1) - datetime.timedelta(days=30)
-        end_date = (targetDate.replace(day=1) + datetime.timedelta(days=60)) - datetime.timedelta(days=1)
         
         shifts = []
         for person in member.get_all():
@@ -64,7 +61,7 @@ class AccessDBReader:
                 else:
                     shift = Shift(person, shift_date, None)
                 shifts.append(shift)
-        # この関数を実行すると、指定された日付の前後1ヶ月間のシフト情報を含むShiftsオブジェクトが返されます。
+        # この関数を実行すると、指定された日付の範囲内のシフト情報を含むShiftsオブジェクトが返されます。
         # Shiftsオブジェクトは、指定された期間内のすべての日付に対してShiftオブジェクトのリストを持っています。
         # 各Shiftオブジェクトは、特定の日付の特定のPersonのシフト情報を表します。
         # もしPersonがその日にシフトを持っていない場合、Shiftオブジェクトのshift属性はNoneになります。
