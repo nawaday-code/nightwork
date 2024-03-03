@@ -7,7 +7,6 @@ from src.Entity.shift import Shift, Shifts
 from src.DataObj.path import *
 
 
-DB_PATH = 'C:\\Users\\unawa\\デスクトップ\\yakinManager\\nightwork\\test勤務表\\shifttable.accdb'
 DB_PASSWORD = '0000'
 
 
@@ -31,9 +30,12 @@ class AccessDBReader:
             rows = cursor.fetchall()
             staff_skills = [Skill(*row) for row in rows]
             skills = Skills(staff_skills)
-            date = datetime(targetyear, targetMonth, 1).strftime('%Y/%m/%d')
-            cursor.execute('SELECT dept FROM tblDept WHERE date = ?', (date,))
-            dept = cursor.fetchone()[0]
+            date = datetime.date(targetyear, targetMonth, 1).strftime('%Y/%m/%d')
+            cursor.execute('SELECT dept FROM tblDept WHERE workdate = ?', (date,))
+            sqlresult = cursor.fetchone()
+            if sqlresult is None:
+                raise ValueError(f"deptのsqlで該当するworkdate{date}が見つからなかったようです。")
+            dept = sqlresult[0]
             modality = Modality(dept)
             person = Person(imutable_info, skills, modality)
             persons.append(person)
@@ -51,7 +53,7 @@ class AccessDBReader:
         end_date = (targetDate.replace(day=1) + datetime.timedelta(days=60)) - datetime.timedelta(days=1)
         
         shifts = []
-        for person in member.person_list:
+        for person in member.get_all():
             cursor.execute('SELECT workdate, shift FROM tblShift WHERE uid = ? AND workdate BETWEEN ? AND ?', (person.uid, start_date, end_date))
             rows = cursor.fetchall()
             date_range = [start_date + datetime.timedelta(days=i) for i in range((end_date - start_date).days + 1)]
