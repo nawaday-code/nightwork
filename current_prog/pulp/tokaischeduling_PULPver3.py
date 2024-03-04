@@ -109,7 +109,7 @@ def calc_schedule():
     # Nr, G, Core = rd.read_Nr_Gm_Core(Ndum)
     # Nnight, Ndaily, Ns = rd.read_skill(Ndum)        #Nnight,Ndailyにはdummyはいない。
     # Nboth = list(set(Nnight) | set(Ndaily))
-
+    F_next_month_alpha = dat.calc_next_month_alpha(F_request_next_month)
     # N = Nr + Ndum
 
     # alpha = rd.read_alpha()
@@ -217,7 +217,7 @@ def calc_schedule():
             + lam[3] * pulp.lpSum([work_interval3[n, t] for n in Nboth for t in Tr]) \
             + lam[4] * pulp.lpSum([work_interval4[n, t] for n in Nboth for t in Tr]) == total_work_interval
     
-# 希望勤務がどの程度実現できたか？
+# 希望振休がどの程度実現できたか？
     model += lam[9] * (len(F_request_dayoff) - pulp.lpSum([x[n, t, w] for n, t, w in F_request_dayoff])) == req_dayoff   # wはすべて'do'となっている
 
 # 連休の取得割合
@@ -269,28 +269,37 @@ def calc_schedule():
             # model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= alpha[10][i]
             model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= alpha[W.index('do')][Tr_dict[t]]
 
-        #'emp'は入らない
-        model += pulp.lpSum([x[n, t, 'emp'] for n in N]) == 0
+
         # 各夜勤・休日勤の人数を確保する
         for w in W[:7]:
             # スタッフ全員に対して人数を確保する・・・(8)
             # model += pulp.lpSum([x[n, t, w] for n in N]) == alpha[W.index(w)][i]
             model += pulp.lpSum([x[n, t, w] for n in N]) == alpha[W.index(w)][Tr_dict[t]]
             # 対応可能なスタッフに各勤務を割り当てる・・・(13)(15)
-            model += pulp.lpSum([x[n, t, w] for n in Ns[W.index(w)]]) == alpha[W.index(w)][i]
+            model += pulp.lpSum([x[n, t, w] for n in Ns[W.index(w)]]) == alpha[W.index(w)][Tr_dict[t]]
         # 明けの人数を確保する・・・(8)
-        model += pulp.lpSum([x[n, t, 'nn'] for n in N]) == alpha[7][i]
+        # model += pulp.lpSum([x[n, t, 'nn'] for n in N]) == alpha[7][i]
+        model += pulp.lpSum([x[n, t, 'nn'] for n in N]) == alpha[W.index('nn')][Tr_dict[t]]
         # 休暇の人数を確保する
-        model += pulp.lpSum([x[n, t, 'ho'] for n in N]) == alpha[11][i]
+        # model += pulp.lpSum([x[n, t, 'ho'] for n in N]) == alpha[11][i]
+        model += pulp.lpSum([x[n, t, 'ho'] for n in N]) == alpha[W.index('ho')][Tr_dict[t]]
         # 他勤の人数を確保する
-        model += pulp.lpSum([x[n, t, 'eW'] for n in N]) == alpha[9][i]
+        # model += pulp.lpSum([x[n, t, 'eW'] for n in N]) == alpha[9][i]
+        model += pulp.lpSum([x[n, t, 'eW'] for n in N]) == alpha[W.index('eW')][Tr_dict[t]]
+        #'emp'は入らない
+        model += pulp.lpSum([x[n, t, 'emp'] for n in N]) == 0
         i += 1
 
     # 夜勤の翌日は明けにする・・・(14)
-    model += pulp.lpSum([x[n, t, w] for n in N for t in Tr for w in W[4:7]]) == x[n, (t+1), W[7]]
+    model += pulp.lpSum([x[n, t, w] for n in N for t in Tr for w in W[4:7]]) == x[n, t+1, 'nn']
 
-    # 来月1日の勤務を割り当てる
-    # model += pulp.lpSum([x[n, T[-1], w] for n in Nr ]) == alpha[w][t[-1]]
+    # 次月1日の勤務
+    # 勤務希望をとりあえず叶えるために各勤務の希望人数と必要人数をそろえる
+    for w in W1:
+        model += pulp.lpSum([x[n, T[-1], w] for n in Nr ]) == F_next_month_alpha[W1.index(w)]
+    # 次月に勤務希望がない場合は空(empty)とする
+    model += pulp.lpSum([x[n, T[-1], 'emp']] for n in Nr) >= 0
+
 
     # 前月分の勤務を入力
     for n, t, w in F_previous:
@@ -298,8 +307,12 @@ def calc_schedule():
     # 勤務希望を叶える・・・(16)
     for n, t, w in F_request:    
         model += x[n, t, w] == 1
-
+    # 次月1日の勤務希望を叶える　-> 実際は次月の勤務作成時に考えるが、当月で夜勤明けにならないようにするため
+    for n, t, w in F_request_next_month:
+        model += x[n, t, w] == 1
     
+
+    # 禁止事項
     for n in Nr: 
         for t in Tr:
             # 連続勤務日数を13日以内にする・・・(18)
@@ -307,6 +320,7 @@ def calc_schedule():
         
         # 1か月間に休日をμ回取得する・・・(19)
         model += pulp.lpSum([x[n, t, 'do'] for t in Tr]) == myu
+
         for t in Tr:
             # 3連続夜勤を禁止する
             model += x[n, t-4, 'nn'] + x[n, t-2, 'nn'] + x[n, t, 'nn'] <= 2

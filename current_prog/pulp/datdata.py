@@ -9,23 +9,48 @@ Wdict = {'A日':'dA', 'M日':'dM', 'C日':'dC', 'F日':'dF', 'A夜':'nA', 'M夜'
         '日':'dW', '勤':'dW', '援':'eW', '張':'eW', 
         'RT':'dW','MR':'dW','TV':'dW','KS':'dW','NM':'dW', 'AG':'dW','XP':'dW',
         'MG':'dW','MT':'dW','CT':'dW','XO':'dW','FR':'dW','NF':'dW','AS':'dW','ET':'dW','半':'dW',
-        '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho',
+        '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho', '希':'dW',
         '例外':'Ex'}
+
+class Staff:
+    def __init__(self, uid, id, staffname):
+        self.uid = int(uid)
+        self.id = str(id)
+        self.staffname = staffname
+        self.dept = ""
+        self.modality_skill ={}
+        self.work_skill = {}
+
+class StaffList():
+    
+    StaffList: dict[int, Staff]
+
+    def __init__(self) -> None:
+        
+        self.StaffList = {}
+
+
 class DatData:
 
     def __init__(self):
-        
+        # self.staffs = StaffList()
         self.dat_dir = config.readSettingJson('DATA_DIR')
         self.work2pulp_dict = Wdict
         # self.pulpvar2num = { 'da':0, 'dm':1, 'dc':2, 'df':3, 'na':4, 'nm':5, 'nc':6, 'nn':7, 'dw':8, 'ew':9, 'do':10, 'ho':11, 'Ex':12, 'em':13 }
         # self.modality2num = {'mr':0, 'tv':1, 'ks':2, 'nm':3, 'ag':4, 'rt':5, 'xp':6, 'ct':7, 'xo':8, 'mg':9, 'mt':10, 'fr':11}
-        self._W1_list = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho', 'Ex', 'em']
+        self._W1_list = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
         self._W2_list = ['Ex']
-        self._W3_list = ['em']
+        self._W3_list = ['emp']
         self._modality_list = ['mr', 'tv', 'ks', 'nm', 'ag', 'rt', 'xp', 'ct', 'xo', 'fr', 'mg', 'mt']
         self._group_list =  ['MR', 'TV', 'KS', 'NM', 'AG', 'RT', 'XP', 'CT', 'XO', 'FR']
         self._Ndum = [900, 901, 902, 903, 904, 905, 906, 907, 908, 909]
-        self._Nr, self._Gm, self._Core = self._read_Nr_Gm_Core()
+       
+       #staffinfo, Nrdeptcore, skillを読み込み、個人情報を取得する
+        # self._get_staff_data()
+        # self._get_dept_and_modality_skills_data()
+        # self._get_work_skills_data()
+       
+        self._Nr, self._Gm, self._Core, self._dept_dict = self._read_Nr_Gm_Core()
         self._Nnight, self._Ndaily, self._Ns = self._read_skill()
         self._T_dict, self._T, self._Tr_dict, self._Tr = self._schedule_T()
         self._F_previous = self.read_previous_request('previous.dat')
@@ -39,6 +64,55 @@ class DatData:
         if keys:
             return keys[0]
         return None
+
+
+    # def _get_staff_data(self):
+    #     staff_info_path = 'staffinfo.dat'
+    #     path = os.path.join(self.dat_dir, staff_info_path)
+
+    #     with open(path, encoding="utf-8_sig") as f:
+    #         for line in f:
+    #             line = line.strip()
+    #             uid, id, name = line.split(',')
+    #             staff = Staff(int(uid), id, name)
+    #             self.staffs.StaffList[int(uid)] = staff
+
+    # def _get_dept_and_modality_skills_data(self):
+    #     Nr_dept_core_path = 'Nrdeptcore.dat'
+    #     modality_skills = ['rt', 'mr', 'tv', 'ks', 'nm', 'xp', 'ct', 'xo', 'ag', 'mg', 'mt']
+    #     path = os.path.join(self.dat_dir, Nr_dept_core_path)
+
+    #     with open(path, encoding="utf-8_sig") as f:
+    #         for line in f:
+    #             line = line.strip()
+    #             arr = []
+    #             arr = line.split(',')
+    #             uid = int(arr[0])
+    #             if uid in self.staffs.StaffList.keys():
+    #                 self.staffs.StaffList[uid].dept = str(arr[1])
+    #                 i = 2
+    #                 for key in modality_skills:
+    #                     self.staffs.StaffList[uid].modality_skill[key] = int(arr[i])
+    #                     i += 1
+
+    # def _get_work_skills_data(self):
+    #     skill_path = 'skill.dat'
+    #     work_skills = ['ag', 'mr', 'ct', 'fr', 'night', 'daily']
+    #     path = os.path.join(self.dat_dir, skill_path)
+
+    #     with open(path, encoding='utf-8_sig') as f:
+    #         for line in f:
+    #             line = line.strip()
+    #             arr = []
+    #             arr = line.split(',')
+    #             uid = int(arr[0])
+    #             if uid in self.staffs.StaffList.keys():
+    #                 i = 1
+    #                 for key in work_skills:
+    #                     self.staffs.StaffList[uid].work_skill[key] = int(arr[i])
+    #                     i += 1
+            
+                
 
     @property
     def modality_list(self):
@@ -222,7 +296,7 @@ class DatData:
         _Nr = []
         _Gm = [[] for _ in range(len(self._modality_list))]
         _Core = [[] for _ in range(len(self._modality_list))]
-
+        dept_dict = {}
         path = os.path.join(self.dat_dir, filepath)
 
         with open(path, encoding="utf-8_sig") as f:
@@ -230,7 +304,7 @@ class DatData:
                 arr = line.strip().split(',')
                 uid = int(arr[0])
                 dept = arr[1].lower()
-
+                dept_dict[uid] = dept
                 if dept != 'as' and arr[3] != 'et':
                     _Nr.append(uid)
 
@@ -246,7 +320,7 @@ class DatData:
                 _Gm[i].append(n)
                 _Core[i].append(n)
 
-        return sorted(_Nr), [sorted(m) for m in _Gm], [sorted(m) for m in _Core]
+        return sorted(_Nr), [sorted(m) for m in _Gm], [sorted(m) for m in _Core], dept_dict
     
     def _read_skill(self, filepath='skill.dat'):
         
@@ -289,22 +363,46 @@ class DatData:
         date = datetime.strptime(configvar['date'][0], '%Y/%m/%d')
         path = os.path.join(self.dat_dir, filepath)
         with open(path, encoding='utf-8_sig') as f:
-            for line in f:
+            lines = f.readlines()
+
+            if not lines or all(line.strip() == '' for line in lines):  # ファイルが空または全てが空文字列の場合
+                return _F_list
+            
+            for line in lines:
                 line = line.strip()
-                data.append(list(line.split(',')))    
+                data.append(list(line.split(',')))
+
             for d in data:
-                _list = []
-                _list.append(int(d[0]))
-                day = datetime.strftime(date + timedelta(days=int(d[1])), '%Y/%m/%d')
-                _list.append(day)
-                _list.append(self.get_key_from_value(dict, int(d[2])))
-                _F_list.append(_list)
+                uid = int(d[0])
+                if uid in self._dept_dict.keys():
+                    if not self._dept_dict[uid].upper()  in ['AS','ET']:
+                        _list = []
+                        _list.append(int(d[0]))
+                        day = datetime.strftime(date + timedelta(days=int(d[1])), '%Y/%m/%d')
+                        _list.append(day)
+                        _list.append(self.get_key_from_value(dict, int(d[2])))
+                        _F_list.append(_list)
         
         return _F_list                
+    
+    def calc_next_month_alpha(self, F_req_next):
+        
+        W = self._W1_list + self._W2_list + self._W3_list
+        work2pulp = self.work2pulp_dict
+        next_alpha = [[0] for _ in range(len(W))]
+
+        for n, t, w in F_req_next:
+            req_work = work2pulp[w]
+            next_alpha[W.index(req_work)] += 1
+        
+        #ただし、明けに関しては3名確定
+        next_alpha[W.index('nn')] = 3
+
+        return next_alpha
 
     @property
     def Nr(self):
-        return self._Nr
+        return self._Nr    
     
     @property
     def N(self):
@@ -367,10 +465,12 @@ class DatData:
 
 datData = DatData()
 
-gm= datData.Gm
+req= datData.F_request
 gl = datData.modality_list
-for g, l in zip(gm, gl):
-    print(str(l) + str(g))
+for uid, t, shift in req:
+    print(str(uid) + '__' + str(t) + '__' + shift)
+# for g, l in zip(gm, gl):
+#     print(str(l) + str(g))
 # for date in d.keys():
 #     print(str(date) + '___' + str(d[date]))
 #     if date in t_cal.keys():
