@@ -7,6 +7,7 @@ import tokaifunc as tfunc
 import config
 import time
 import datdata 
+
 def calc_schedule():
 
     dat = datdata.DatData()
@@ -48,6 +49,7 @@ def calc_schedule():
     T = dat.T
     Tr_dict = dat.Tr_dict
     Tr = dat.Tr
+    Tclose = dat.Tclose
     tokai_calendar = dat.tokai_calendar
     
     # 勤務の種類
@@ -123,17 +125,26 @@ def calc_schedule():
 
     # createDate:作成日時 epsilon:夜勤日勤回数の上限 iota:連続勤務日数 kappa:所定労働時間
     # myu:休日数 nyu1,2,3:連休数 rho:休日数の下限 lam:勤務間隔の荷重係数
-    createDate, epsilon, iota, kappa, myu, nyu, rho, lam, calctime = rd.read_config_var()
-    
-    defaultTwoConsecutiveHolidays = nyu[0] + nyu[1]*2 + nyu[2]*3
-    defaultThreeConsecutiveHolidays = nyu[1] + nyu[2]*1
-    fourConsecutiveHolidays = nyu[2]
+    # createDate, epsilon, iota, kappa, myu, nyu, rho, lam, calctime = rd.read_config_var()
+    configvar = dat.configvar
+    create_date = configvar['date']
+    night_and_dailiy_work_limit = configvar['epsilon']
+    consecutive_work_limit = configvar['iota']
+    holidays = configvar['myu']
+    config_holidays = configvar['nyu']
+    lam = [1,1,1,1,1,1,1,1,1,1,1]
+    default_two_consecutive_holidays = config_holidays[0] + config_holidays[1]*2 + config_holidays[2]*3
+    # default_two_consecutive_holidays = nyu[0] + nyu[1]*2 + nyu[2]*3
+    default_three_consecutive_holidays = config_holidays[1] + config_holidays[2]*1
+    default_four_consecutive_holidays = config_holidays[2]
 
     # 夜勤・休日日勤平均回数
-    meanWorks = tfunc.calc_mean_of_night_and_daily(alpha, len(Ndaily), len(Nnight))
+    mean_works =dat.calc_mean_works()
+    # mean_works = tfunc.calc_mean_of_night_and_daily(alpha, len(Ndaily), len(Nnight))
     # 休診日かかる夜勤・日勤平均回数=休診日 * 休診日に必要な人数 / 夜勤・日勤対応スタッフ数
-    mean_works_in_closedday = len(Tclosed) * REQUIRED_NUM_OF_COLOSED_DAY / len(Nboth)
-    Tdict, T, Tr, Tclosed, Topened, Toutput = tfunc.make_T(createDate, iota)
+    mean_works_on_close = dat.calc_mean_works_on_close()
+    # mean_works_on_close = len(Tclosed) * REQUIRED_NUM_OF_COLOSED_DAY / len(Nboth)
+    # Tdict, T, Tr, Tclosed, Topened, Toutput = tfunc.make_T(createDate, iota)
 
     # Fprev = rd.read_previous(createDate)
     # Frequ = rd.read_request(createDate)
@@ -173,19 +184,19 @@ def calc_schedule():
     # 連休変数''
     two_consecutive_holidays = pulp.LpVariable.dicts('two_consecutive_holidays', [(n, t) for n in Nboth for t in Tr[:-1]], cat='Binary')
     three_consecutive_holidays = pulp.LpVariable.dicts('three_consecutive_holidays', [(n, t) for n in Nboth for t in Tr[:-2]], cat='Binary')
-    total_two_consecutive_holidays = pulp.LpVariable.dicts('total_two_consecutive_holidays', [n for n in Nboth], cat='Integer')
-    total_three_consecutive_holidays = pulp.LpVariable.dicts('total_three_consecutive_holidays', [n for n in Nboth], cat='Integer')
+    total_two_consecutive_holidays = pulp.LpVariable.dicts('total_two_consecutive_holidays', [(n) for n in Nboth], cat='Integer')
+    total_three_consecutive_holidays = pulp.LpVariable.dicts('total_three_consecutive_holidays', [(n) for n in Nboth], cat='Integer')
     consecutive_holidays = pulp.LpVariable('consecutive_holidays', cat='Continuous')
 
     # 休診日に勤務する回数
-    work_close = pulp.LpVariable.dicts('work_close', [n for n in Nboth], cat='Integer')
+    work_on_close = pulp.LpVariable.dicts('work_on_close', [n for n in Nboth], cat='Integer')
     # 休診日に勤務する回数の平均偏差
-    work_close_dev = pulp.LpVariable.dicts('work_close_dev', [n for n in Nboth], lowBound=0, cat='Continuous')
+    work_on_close_dev = pulp.LpVariable.dicts('work_on_close_dev', [n for n in Nboth], lowBound=0, cat='Continuous')
     # 休診日に勤務する回数の平均偏差の合計
-    total_work_close_dev = pulp.LpVariable('total_work_close_dev', cat='Continuous')
+    total_work_on_close_dev = pulp.LpVariable('total_work_on_close_dev', cat='Continuous')
       
     # 休日希望が叶わなかった総数
-    req_dayoff = pulp.LpVariable('req_dayoff', lowBound=0, cat='Continuous')
+    total_request_dayoff = pulp.LpVariable('total_request_dayoff', lowBound=0, cat='Continuous')
 
 
    
@@ -202,8 +213,8 @@ def calc_schedule():
             + total_work_interval \
                 + consecutive_holidays \
                     + total_work_all_dev \
-                        + total_work_close_dev \
-                            + req_dayoff
+                        + total_work_on_close_dev \
+                            + total_request_dayoff
     
 
 # ***********************************************************************
@@ -223,17 +234,19 @@ def calc_schedule():
             + lam[4] * pulp.lpSum([work_interval4[n, t] for n in Nboth for t in Tr]) == total_work_interval
     
 # 希望振休がどの程度実現できたか？
-    model += lam[9] * (len(F_request_dayoff) - pulp.lpSum([x[n, t, w] for n, t, w in F_request_dayoff])) == req_dayoff   # wはすべて'do'となっている
+    # model += lam[9] * (len(F_request_dayoff) - pulp.lpSum([x[n, t, w] for n, t, w in F_request_dayoff])) == total_request_dayoff   # wはすべて'do'となっている
 
 # 連休の取得割合
-    model += lam[6] * pulp.lpSum([defaultTwoConsecutiveHolidays - total_two_consecutive_holidays[n] for n in Nboth]) \
-            + lam[7] * pulp.lpSum([defaultThreeConsecutiveHolidays - total_three_consecutive_holidays[n] for n in Nboth]) == consecutive_holidays
-
+    # model += lam[6] * pulp.lpSum([default_two_consecutive_holidays - total_two_consecutive_holidays[n] for n in Nboth]) \
+    #         + lam[7] * pulp.lpSum([default_three_consecutive_holidays - total_three_consecutive_holidays[n] for n in Nboth]) == consecutive_holidays
+    model += -lam[6] * pulp.lpSum([total_two_consecutive_holidays[n] for n in Nboth]) \
+            - lam[7] * pulp.lpSum([total_three_consecutive_holidays[n] for n in Nboth]) == consecutive_holidays
+    
 # 夜勤・休診日日勤の回数の平均偏差の合計
     model += lam[4] * pulp.lpSum([work_all_dev[n] for n in Nboth]) == total_work_all_dev
 
 # 休診日における夜勤・休診日日勤の回数の平均偏差の合計
-    model += lam[5] * pulp.lpSum([work_close_dev[n] for n in Nboth]) == total_work_close_dev
+    model += lam[5] * pulp.lpSum([work_on_close_dev[n] for n in Nboth]) == total_work_on_close_dev
 
 
 
@@ -264,8 +277,9 @@ def calc_schedule():
             #     # 責任者クラスを設定人数以上で確保・・・(12)
             #     model += pulp.lpSum([x[n, t, 'dW'] for n in Core[m]]) >= gamma[m][i]
             for m in modality_list:
-                model += pulp.lpSum([x[n, t, 'dw'] for n in Gm[modality_list.index(m)]]) >= beta[modality_list.index(m)][Tr_dict[t]]
-                model += pulp.lpSum([x[n, t, 'dw'] for n in Core[modality_list.index(m)]]) >= gamma[modality_list.index(m)][Tr_dict[t]]
+
+                model += pulp.lpSum([x[n, t, 'dW'] for n in Gm[modality_list.index(m)]]) >= beta[modality_list.index(m)][Tr_dict[t]]
+                model += pulp.lpSum([x[n, t, 'dW'] for n in Core[modality_list.index(m)]]) >= gamma[modality_list.index(m)][Tr_dict[t]]
         else:
             # 休診日の日勤は設定人数分を確保する・・・(7)
             # model += pulp.lpSum([x[n, t, 'dW'] for n in N]) == alpha[8][i]
@@ -296,7 +310,10 @@ def calc_schedule():
         i += 1
 
     # 夜勤の翌日は明けにする・・・(14)
-    model += pulp.lpSum([x[n, t, w] for n in N for t in Tr for w in W[4:7]]) == x[n, t+1, 'nn']
+    for n in N:
+        for t in Tr:
+            next_day = t + datetime.timedelta(days=1)
+            model += pulp.lpSum([x[n, t, w] for w in W[4:7]]) == x[n, next_day, 'nn']
 
     # 次月1日の勤務
     # 勤務希望をとりあえず叶えるために各勤務の希望人数と必要人数をそろえる
@@ -340,14 +357,14 @@ def calc_schedule():
         model += pulp.lpSum([x[n, t, w] for t in Tr for w in W[:7]]) == work_all[n]   #各技師の合計夜勤・休日日勤回数
         model += work_all[n] <= epsilon
         # 各技師の合計夜勤・休日日勤回数の平均偏差・・・(32)
-        model += meanWorks - work_all[n] >= -work_all_dev[n]
-        model += meanWorks - work_all[n] <= work_all_dev[n]
+        model += mean_works - work_all[n] >= -work_all_dev[n]
+        model += mean_works - work_all[n] <= work_all_dev[n]
 
         # 休診日における勤務の取得回数を平均化する
-        model += pulp.lpSum([x[n, t, 'do'] for t in Tclosed]) == work_close[n]
+        model += pulp.lpSum([x[n, t, 'do'] for t in Tclose]) == work_on_close[n]
         # 休診日における勤務回数をできるだけ平均化する
-        model += mean_works_in_closedday - work_close[n] >= -work_close_dev[n]
-        model += mean_works_in_closedday - work_close[n] <= work_close_dev[n]
+        model += mean_works_on_close - work_on_close[n] >= -work_on_close_dev[n]
+        model += mean_works_on_close - work_on_close[n] <= work_on_close_dev[n]
 
 
         # 連休の取得は休日と休暇を組み合わせて判定する

@@ -31,11 +31,12 @@ class StaffList():
 
 
 class DatData:
-
+    staffs: dict[int, Staff]
     def __init__(self):
-        # self.staffs = StaffList()
+        self.staffs = {}
+
         self.dat_dir = config.readSettingJson('DATA_DIR')
-        self.dat_dir = 'C:\\Users\\hhond\\source\\repos\\nightwork\\current_prog\\data'
+        # self.dat_dir = 'C:\\Users\\hhond\\source\\repos\\nightwork\\current_prog\\data'
         self.work2pulp_dict = Wdict
         # self.pulpvar2num = { 'da':0, 'dm':1, 'dc':2, 'df':3, 'na':4, 'nm':5, 'nc':6, 'nn':7, 'dw':8, 'ew':9, 'do':10, 'ho':11, 'Ex':12, 'em':13 }
         # self.modality2num = {'mr':0, 'tv':1, 'ks':2, 'nm':3, 'ag':4, 'rt':5, 'xp':6, 'ct':7, 'xo':8, 'mg':9, 'mt':10, 'fr':11}
@@ -47,9 +48,9 @@ class DatData:
         self._Ndum = [900, 901, 902, 903, 904, 905, 906, 907, 908, 909]
        
        #staffinfo, Nrdeptcore, skillを読み込み、個人情報を取得する
-        # self._get_staff_data()
-        # self._get_dept_and_modality_skills_data()
-        # self._get_work_skills_data()
+        self._get_staff_data()
+        self._get_dept_and_modality_skills_data()
+        self._get_work_skills_data()
        
         self._Nr, self._Gm, self._Core, self._dept_dict = self._read_Nr_Gm_Core()
         self._Nnight, self._Ndaily, self._Ns = self._read_skill()
@@ -67,51 +68,51 @@ class DatData:
         return None
 
 
-    # def _get_staff_data(self):
-    #     staff_info_path = 'staffinfo.dat'
-    #     path = os.path.join(self.dat_dir, staff_info_path)
+    def _get_staff_data(self):
+        staff_info_path = 'staffinfo.dat'
+        path = os.path.join(self.dat_dir, staff_info_path)
 
-    #     with open(path, encoding="utf-8_sig") as f:
-    #         for line in f:
-    #             line = line.strip()
-    #             uid, id, name = line.split(',')
-    #             staff = Staff(int(uid), id, name)
-    #             self.staffs.StaffList[int(uid)] = staff
+        with open(path, encoding="utf-8_sig") as f:
+            for line in f:
+                line = line.strip()
+                uid, id, name = line.split(',')
+                self.staffs[int(uid)] = Staff(int(uid), id, name)
 
-    # def _get_dept_and_modality_skills_data(self):
-    #     Nr_dept_core_path = 'Nrdeptcore.dat'
-    #     modality_skills = ['rt', 'mr', 'tv', 'ks', 'nm', 'xp', 'ct', 'xo', 'ag', 'mg', 'mt']
-    #     path = os.path.join(self.dat_dir, Nr_dept_core_path)
 
-    #     with open(path, encoding="utf-8_sig") as f:
-    #         for line in f:
-    #             line = line.strip()
-    #             arr = []
-    #             arr = line.split(',')
-    #             uid = int(arr[0])
-    #             if uid in self.staffs.StaffList.keys():
-    #                 self.staffs.StaffList[uid].dept = str(arr[1])
-    #                 i = 2
-    #                 for key in modality_skills:
-    #                     self.staffs.StaffList[uid].modality_skill[key] = int(arr[i])
-    #                     i += 1
+    def _get_dept_and_modality_skills_data(self):
+        Nr_dept_core_path = 'Nrdeptcore.dat'
+        modality_skills = ['rt', 'mr', 'tv', 'ks', 'nm', 'xp', 'ct', 'xo', 'ag', 'mg', 'mt']
+        path = os.path.join(self.dat_dir, Nr_dept_core_path)
 
-    # def _get_work_skills_data(self):
-    #     skill_path = 'skill.dat'
-    #     work_skills = ['ag', 'mr', 'ct', 'fr', 'night', 'daily']
-    #     path = os.path.join(self.dat_dir, skill_path)
+        with open(path, encoding="utf-8_sig") as f:
+            for line in f:
+                line = line.strip()
+                arr = []
+                arr = line.split(',')
+                uid = int(arr[0])
+                if uid in self.staffs.keys():
+                    self.staffs[uid].dept = str(arr[1])
+                    i = 2
+                    for key in modality_skills:
+                        self.staffs[uid].modality_skill[key] = int(arr[i])
+                        i += 1
 
-    #     with open(path, encoding='utf-8_sig') as f:
-    #         for line in f:
-    #             line = line.strip()
-    #             arr = []
-    #             arr = line.split(',')
-    #             uid = int(arr[0])
-    #             if uid in self.staffs.StaffList.keys():
-    #                 i = 1
-    #                 for key in work_skills:
-    #                     self.staffs.StaffList[uid].work_skill[key] = int(arr[i])
-    #                     i += 1
+    def _get_work_skills_data(self):
+        skill_path = 'skill.dat'
+        work_skills = ['ag', 'mr', 'ct', 'fr', 'night', 'daily']
+        path = os.path.join(self.dat_dir, skill_path)
+
+        with open(path, encoding='utf-8_sig') as f:
+            for line in f:
+                line = line.strip()
+                arr = []
+                arr = line.split(',')
+                uid = int(arr[0])
+                if uid in self.staffs.keys():
+                    i = 1
+                    for skill in work_skills:
+                        self.staffs[uid].work_skill[skill] = int(arr[i])
+                        i += 1
             
                 
 
@@ -401,6 +402,24 @@ class DatData:
 
         return next_month_alpha
 
+    def calc_mean_works(self):
+        alpha = self.alpha
+
+        daily_work_count = sum([sum(row) for row in alpha[:4]])
+        night_work_count = sum([sum(row) for row in alpha[4:7]])
+
+        return daily_work_count / len(self._Ndaily) + night_work_count / len(self._Nnight)
+    
+
+    def calc_mean_works_on_close(self):
+        required_staffs_on_close = 11
+        Tclose = 0
+        for t in self._Tr:
+            if t in self.tokai_calendar:
+                Tclose += 1
+
+        return Tclose * required_staffs_on_close / len(list(set(self._Nnight) | set(self._Ndaily)))
+
     @property
     def Nr(self):
         return self._Nr    
@@ -448,6 +467,14 @@ class DatData:
         return self._Tr
 
     @property
+    def Tclose(self):
+        Tclose = []
+        for t in self._Tr:
+            if t in self.tokai_calendar:
+                Tclose.append(t)
+        return Tclose
+
+    @property
     def F_previous(self):
         return self._F_previous
 
@@ -464,17 +491,20 @@ class DatData:
         return self._F_request_next_month
     
 
-datData = DatData()
+# datData = DatData()
 
-req= datData.F_request
-gl = datData.modality_list
-# for uid, t, shift in req:
-#     print(str(uid) + '__' + str(t) + '__' + shift)
-alpha = datData.alpha
-al = datData.pulpvar_list
-gm = datData.Gm
-for g, l in zip(alpha, al):
-    print(str(l) + str(g))
+# req= datData.F_request
+# gl = datData.modality_list
+# # for uid, t, shift in req:
+# #     print(str(uid) + '__' + str(t) + '__' + shift)
+# alpha = datData.alpha
+# al = datData.pulpvar_list
+# gm = datData.Gm
+# for g, l in zip(alpha, al):
+#     print(str(l) + str(g))
+
+# print(datData.calc_mean_works_on_close())
+# print(datData.calc_mean_works())
 # for date in d.keys():
 #     print(str(date) + '___' + str(d[date]))
 #     if date in t_cal.keys():
