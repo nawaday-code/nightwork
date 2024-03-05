@@ -19,6 +19,9 @@ def calc_schedule():
     # staff = {}
     # N = []; Nr = []; Ndum = []; Ndaily = []; Nnight = []; Nboth = []; Ns = []
     staff = dat.staff_list
+    pulpvar_list = dat.pulpvar_list
+    modality_list = dat.modality_list
+
     N = dat.N; 
     Nr = dat.Nr 
     Ndaily = dat.Ndaily
@@ -74,9 +77,7 @@ def calc_schedule():
     MAXCONSECUTIVEWORKS = 12        #法律上可能な連続勤務日数
     REQUIRED_NUM_OF_COLOSED_DAY = 11 #休診日に必要な人数（日勤、夜勤、明け）
 
-    pulpvar_list = dat.pulpvar_list
 
-    modality_list = dat.modality_list
 
     
     # 日付ごとの制約条件変数
@@ -89,7 +90,8 @@ def calc_schedule():
     alpha = dat.alpha
     beta = dat.beta
     gamma = dat.gamma
-    
+    next_month_alpha = dat.calc_next_month_alpha()
+
     # alpha = []; beta = []; gamma = []
 
     # # 前月分の勤務
@@ -102,6 +104,9 @@ def calc_schedule():
     F_request = dat.F_request
     F_request_dayoff = dat.F_request_dayoff
     F_request_next_month = dat.F_request_next_month
+    #
+    
+
     # staff = rd.read_staff_info()
 
     # Ndum = tfunc.make_Ndum(10)
@@ -109,7 +114,7 @@ def calc_schedule():
     # Nr, G, Core = rd.read_Nr_Gm_Core(Ndum)
     # Nnight, Ndaily, Ns = rd.read_skill(Ndum)        #Nnight,Ndailyにはdummyはいない。
     # Nboth = list(set(Nnight) | set(Ndaily))
-    F_next_month_alpha = dat.calc_next_month_alpha(F_request_next_month)
+    
     # N = Nr + Ndum
 
     # alpha = rd.read_alpha()
@@ -296,7 +301,7 @@ def calc_schedule():
     # 次月1日の勤務
     # 勤務希望をとりあえず叶えるために各勤務の希望人数と必要人数をそろえる
     for w in W1:
-        model += pulp.lpSum([x[n, T[-1], w] for n in Nr ]) == F_next_month_alpha[W1.index(w)]
+        model += pulp.lpSum([x[n, T[-1], w] for n in Nr ]) == next_month_alpha[W1.index(w)]
     # 次月に勤務希望がない場合は空(empty)とする
     model += pulp.lpSum([x[n, T[-1], 'emp']] for n in Nr) >= 0
 

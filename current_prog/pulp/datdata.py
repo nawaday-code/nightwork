@@ -35,6 +35,7 @@ class DatData:
     def __init__(self):
         # self.staffs = StaffList()
         self.dat_dir = config.readSettingJson('DATA_DIR')
+        self.dat_dir = 'C:\\Users\\hhond\\source\\repos\\nightwork\\current_prog\\data'
         self.work2pulp_dict = Wdict
         # self.pulpvar2num = { 'da':0, 'dm':1, 'dc':2, 'df':3, 'na':4, 'nm':5, 'nc':6, 'nn':7, 'dw':8, 'ew':9, 'do':10, 'ho':11, 'Ex':12, 'em':13 }
         # self.modality2num = {'mr':0, 'tv':1, 'ks':2, 'nm':3, 'ag':4, 'rt':5, 'xp':6, 'ct':7, 'xo':8, 'mg':9, 'mt':10, 'fr':11}
@@ -385,20 +386,20 @@ class DatData:
         
         return _F_list                
     
-    def calc_next_month_alpha(self, F_req_next):
+    def calc_next_month_alpha(self):
         
-        W = self._W1_list + self._W2_list + self._W3_list
+        W = self._W1_list
         work2pulp = self.work2pulp_dict
-        next_alpha = [[0] for _ in range(len(W))]
+        next_month_alpha = [[0] for _ in range(len(W))]
 
-        for n, t, w in F_req_next:
+        for n, t, w in self._F_request_next_month:
             req_work = work2pulp[w]
-            next_alpha[W.index(req_work)] += 1
+            next_month_alpha[W.index(req_work)] += 1
         
         #ただし、明けに関しては3名確定
-        next_alpha[W.index('nn')] = 3
+        next_month_alpha[W.index('nn')] = 3
 
-        return next_alpha
+        return next_month_alpha
 
     @property
     def Nr(self):
@@ -467,10 +468,13 @@ datData = DatData()
 
 req= datData.F_request
 gl = datData.modality_list
-for uid, t, shift in req:
-    print(str(uid) + '__' + str(t) + '__' + shift)
-# for g, l in zip(gm, gl):
-#     print(str(l) + str(g))
+# for uid, t, shift in req:
+#     print(str(uid) + '__' + str(t) + '__' + shift)
+alpha = datData.alpha
+al = datData.pulpvar_list
+gm = datData.Gm
+for g, l in zip(alpha, al):
+    print(str(l) + str(g))
 # for date in d.keys():
 #     print(str(date) + '___' + str(d[date]))
 #     if date in t_cal.keys():
