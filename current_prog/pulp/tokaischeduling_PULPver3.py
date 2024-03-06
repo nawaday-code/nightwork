@@ -151,8 +151,6 @@ def calc_schedule():
 
     # Fp = tfunc.reformat_F(Fprev, Wdict, Tdict)
     # Fr = tfunc.reformat_F(Frequ, Wdict, Tdict)
-
-
 # ***********************************************************************
 # 最小化問題を記述
 # ***********************************************************************
@@ -312,8 +310,9 @@ def calc_schedule():
     # 夜勤の翌日は明けにする・・・(14)
     for n in N:
         for t in Tr:
+            j = Tr_dict[t]
             next_day = t + datetime.timedelta(days=1)
-            model += pulp.lpSum([x[n, t, w] for w in W[4:7]]) == x[n, next_day, 'nn']
+            model += pulp.lpSum([x[n, Tr[j], w] for w in W[4:7]]) == x[n, Tr[j+1], 'nn']
 
     # 次月1日の勤務
     # 勤務希望をとりあえず叶えるために各勤務の希望人数と必要人数をそろえる
@@ -338,14 +337,16 @@ def calc_schedule():
     for n in Nr: 
         for t in Tr:
             # 連続勤務日数を13日以内にする・・・(18)
-            model += pulp.lpSum([x[n, t-i, w] for i in range(MAXCONSECUTIVEWORKS) for w in W[:10]]) <= MAXCONSECUTIVEWORKS
+            j = Tr_dict[t]
+            model += pulp.lpSum([x[n, Tr[j-l], w] for l in range(MAXCONSECUTIVEWORKS) for w in W[:10]]) <= MAXCONSECUTIVEWORKS
         
         # 1か月間に休日をμ回取得する・・・(19)
-        model += pulp.lpSum([x[n, t, 'do'] for t in Tr]) == myu
+        model += pulp.lpSum([x[n, t, 'do'] for t in Tr]) == holidays
 
         for t in Tr:
             # 3連続夜勤を禁止する
-            model += x[n, t-4, 'nn'] + x[n, t-2, 'nn'] + x[n, t, 'nn'] <= 2
+            j = Tr_dict[t]
+            model += x[n, Tr[j-4], 'nn'] + x[n, Tr[j-2], 'nn'] + x[n, Tr[j], 'nn'] <= 2
 
             # 対象スタッフの勤務にダミーが入ることを禁止する
             model += x[n, t, 'Ex'] == 0

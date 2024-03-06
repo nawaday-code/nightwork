@@ -380,9 +380,10 @@ class DatData:
                     if not self._dept_dict[uid].upper()  in ['AS','ET']:
                         _list = []
                         _list.append(int(d[0]))
-                        day = datetime.strftime(date + timedelta(days=int(d[1])), '%Y/%m/%d')
+                        day = date + timedelta(days=int(d[1]))
                         _list.append(day)
-                        _list.append(self.get_key_from_value(dict, int(d[2])))
+                        work = self.get_key_from_value(dict, int(d[2]))
+                        _list.append(self.work2pulp_dict[work])
                         _F_list.append(_list)
         
         return _F_list                
