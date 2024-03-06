@@ -22,6 +22,9 @@ class InfoBOX:
         
         self.__member = AccessDBReader.read_member(target_year, target_month, self.__access_path_obj)
         self.__shifts = AccessDBReader.read_shifts(self.__member, start_date, end_date, self.__access_path_obj)
+        self.__alpha = AccessDBReader.read_alpha(start_date, end_date, self.__access_path_obj)
+        self.__beta = AccessDBReader.read_beta(start_date, end_date, self.__access_path_obj)
+        self.__gamma = AccessDBReader.read_gamma(start_date, end_date, self.__access_path_obj)
         self.__settings = Settings(self.__settings_path_obj)
 
     #日付を変更したいとき、日付が変更された新たなInfoBOXを生成する仕様
@@ -102,6 +105,14 @@ class InfoBOX:
     def get_modality_acronyms(self):
         return self.__settings.get_modality_acronyms()
 
+    def get_alpha(self):
+        return self.__alpha.get_daily_needs()
+
+    def get_beta(self):
+        return self.__beta.get_daily_needs()
+
+    def get_gamma(self):
+        return self.__gamma.get_daily_needs()
     
 
 

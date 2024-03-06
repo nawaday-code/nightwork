@@ -5,6 +5,9 @@ from src.Util.infobox import InfoBOX
 
 infobox = InfoBOX("C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\shifttable.accdb", "C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\settings\\settings.json", "C:\\Users\\unawa\\デスクトップ\\prog\\nightwork\\next勤務表\\test.csv", target_year=2023, target_month=12, start_date=datetime.date(2023,11,15), end_date=datetime.date(2024,1,1))
 
+print(infobox.get_alpha())
+print("##################################################################")
+print(infobox.get_beta())
 # from src.Util.input import *
 
 # def test_input_methods():

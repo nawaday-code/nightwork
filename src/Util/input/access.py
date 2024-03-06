@@ -5,6 +5,7 @@ from src.DataObj.person import *
 from src.DataObj.member import *
 from src.Entity.shift import Shift, Shifts
 from src.DataObj.path import *
+from src.DataObj.abr import Piece, ABR
 
 
 DB_PASSWORD = '0000'
@@ -67,3 +68,45 @@ class AccessDBReader:
         # もしPersonがその日にシフトを持っていない場合、Shiftオブジェクトのshift属性はNoneになります。
         return Shifts(shifts)
 
+    @staticmethod
+    def read_alpha(start_date, end_date, db_path_obj):
+        
+        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + db_path_obj.value + ';PWD=' + DB_PASSWORD + ';')
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT workdate, worktype, staffs FROM tblPulpAlpha WHERE workdate BETWEEN ? AND ?', (start_date, end_date))
+        rows = cursor.fetchall()
+
+        pieces = [Piece(*row) for row in rows]
+        kinds =  {'da': 0, 'dm': 1, 'dc': 2, 'df': 3, 'na': 4, 'nm': 5, 'nc': 6, 'nn': 7, 'dw': 8, 'ew': 9, 'do': 10, 'ho': 11}
+        
+        return ABR(pieces,kinds)
+ 
+    @staticmethod
+    def read_beta(start_date, end_date, db_path_obj):
+        
+        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + db_path_obj.value + ';PWD=' + DB_PASSWORD + ';')
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT workdate, modality, staffs FROM tblPulpBeta WHERE workdate BETWEEN ? AND ?', (start_date, end_date))
+        rows = cursor.fetchall()
+
+        pieces = [Piece(*row) for row in rows]
+        kinds = {'mr':0, 'tv':1, 'ks':2, 'nm':3, 'ag':4, 'rt':5, 'xp':6, 'ct':7, 'xo':8, 'mg':9, 'mt':10, 'fr':11}
+        
+        return ABR(pieces,kinds)
+         
+    @staticmethod
+    def read_gamma(start_date, end_date, db_path_obj):
+        
+        conn = pyodbc.connect('Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=' + db_path_obj.value + ';PWD=' + DB_PASSWORD + ';')
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT workdate, modality, staffs FROM tblPulpGamma WHERE workdate BETWEEN ? AND ?', (start_date, end_date))
+        rows = cursor.fetchall()
+
+        pieces = [Piece(*row) for row in rows]
+        kinds = {'mr':0, 'tv':1, 'ks':2, 'nm':3, 'ag':4, 'rt':5, 'xp':6, 'ct':7, 'xo':8, 'mg':9, 'mt':10, 'fr':11}
+        
+        return ABR(pieces,kinds)
+ 
