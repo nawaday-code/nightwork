@@ -196,13 +196,19 @@ def calc_schedule():
     for t in Tr[:-1]:
         # alpha
         # 各勤務に必要な人数を確保する
-        model += pulp.lpSum([x[n, t, 'dA'] for n in Ns[W.index('dA')]]) == alpha[W.index('dA')][Tr_dict[t]]
-        model += pulp.lpSum([x[n, t, 'dM'] for n in Ns[W.index('dM')]]) == alpha[W.index('dM')][Tr_dict[t]]
-        model += pulp.lpSum([x[n, t, 'dC'] for n in Ns[W.index('dC')]]) == alpha[W.index('dC')][Tr_dict[t]]
-        model += pulp.lpSum([x[n, t, 'dF'] for n in Ns[W.index('dF')]]) == alpha[W.index('dF')][Tr_dict[t]]
-        model += pulp.lpSum([x[n, t, 'nA'] for n in Ns[W.index('nA')]]) == alpha[W.index('nA')][Tr_dict[t]]
-        model += pulp.lpSum([x[n, t, 'nM'] for n in Ns[W.index('nM')]]) == alpha[W.index('nM')][Tr_dict[t]]
-        model += pulp.lpSum([x[n, t, 'nC'] for n in Ns[W.index('nC')]]) == alpha[W.index('nC')][Tr_dict[t]]
+        for w in W[:7]:
+            # スタッフ全員に対して各勤務の人数を確保し、かつ　対応可能なスタッフを割り当てる
+            # スタッフ全員に対して人数を確保する・・・(8)
+            model += pulp.lpSum([x[n, t, w] for n in N]) == alpha[W.index(w)][Tr_dict[t]]
+            # 対応可能なスタッフに各勤務「'dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC'」を割り当てる・・・(13)(15)
+            model += pulp.lpSum([x[n, t, w] for n in Ns[W.index(w)]]) == alpha[W.index(w)][Tr_dict[t]]
+        # model += pulp.lpSum([x[n, t, 'dA'] for n in Ns[W.index('dA')]]) == alpha[W.index('dA')][Tr_dict[t]]
+        # model += pulp.lpSum([x[n, t, 'dM'] for n in Ns[W.index('dM')]]) == alpha[W.index('dM')][Tr_dict[t]]
+        # model += pulp.lpSum([x[n, t, 'dC'] for n in Ns[W.index('dC')]]) == alpha[W.index('dC')][Tr_dict[t]]
+        # model += pulp.lpSum([x[n, t, 'dF'] for n in Ns[W.index('dF')]]) == alpha[W.index('dF')][Tr_dict[t]]
+        # model += pulp.lpSum([x[n, t, 'nA'] for n in Ns[W.index('nA')]]) == alpha[W.index('nA')][Tr_dict[t]]
+        # model += pulp.lpSum([x[n, t, 'nM'] for n in Ns[W.index('nM')]]) == alpha[W.index('nM')][Tr_dict[t]]
+        # model += pulp.lpSum([x[n, t, 'nC'] for n in Ns[W.index('nC')]]) == alpha[W.index('nC')][Tr_dict[t]]
         model += pulp.lpSum([x[n, t, 'nn'] for n in N]) == alpha[W.index('nn')][Tr_dict[t]]
         model += pulp.lpSum([x[n, t, 'ho'] for n in N]) == alpha[W.index('ho')][Tr_dict[t]]
         model += pulp.lpSum([x[n, t, 'eW'] for n in N]) == alpha[W.index('eW')][Tr_dict[t]]
@@ -211,12 +217,14 @@ def calc_schedule():
         # 'Ex'ダミー勤務は選択されない
         model += pulp.lpSum([x[n, t, 'Ex'] for n in Nr]) == 0
 
-        if not t in Tclose:
+
+        if t in Tclose:
             # 休診日の日勤は設定人数分を確保する・・・(7)
             model += pulp.lpSum([x[n, t, 'dW'] for n in N]) == alpha[W.index('dW')][Tr_dict[t]]
             # model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= alpha[W.index('do')][Tr_dict[t]]
             model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= 0
         else:
+
             # 診療日の日勤を設定人数以上で確保する・・・(6)
             # model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= alpha[W.index('dW')][Tr_dict[t]]   #可読性が高い気がする
             model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= 0
@@ -235,20 +243,20 @@ def calc_schedule():
             model += pulp.lpSum([x[n, t, w] for w in W[4:7]]) == x[n, next_day, 'nn']
 
     # 次月1日の勤務 -> 夜勤や日勤は次月のため、習熟度の満たしていないスタッフでも入力可能なので、NsでなくNとして計算
-    # for w in W1:
-    #     model += pulp.lpSum([x[n, T[-1], w] for n in N ]) == next_month_alpha[W1.index(w)]
-    model += pulp.lpSum([x[n, Tr[-1], 'dA'] for n in N]) == next_month_alpha[W1.index('dA')]
-    model += pulp.lpSum([x[n, Tr[-1], 'dM'] for n in N]) == next_month_alpha[W1.index('dM')]
-    model += pulp.lpSum([x[n, Tr[-1], 'dC'] for n in N]) == next_month_alpha[W1.index('dC')]
-    model += pulp.lpSum([x[n, Tr[-1], 'dF'] for n in N]) == next_month_alpha[W1.index('dF')]
-    model += pulp.lpSum([x[n, Tr[-1], 'nA'] for n in N]) == next_month_alpha[W1.index('nA')]
-    model += pulp.lpSum([x[n, Tr[-1], 'nM'] for n in N]) == next_month_alpha[W1.index('nM')]
-    model += pulp.lpSum([x[n, Tr[-1], 'nC'] for n in N]) == next_month_alpha[W1.index('nC')]
-    model += pulp.lpSum([x[n, Tr[-1], 'nn'] for n in N]) == next_month_alpha[W1.index('nn')]
-    model += pulp.lpSum([x[n, Tr[-1], 'dW'] for n in N]) == next_month_alpha[W1.index('dW')]
-    model += pulp.lpSum([x[n, Tr[-1], 'eW'] for n in N]) == next_month_alpha[W1.index('eW')]
-    model += pulp.lpSum([x[n, Tr[-1], 'do'] for n in N]) == next_month_alpha[W1.index('do')]
-    model += pulp.lpSum([x[n, Tr[-1], 'ho'] for n in N]) == next_month_alpha[W1.index('ho')]
+    for w in W1:
+        model += pulp.lpSum([x[n, T[-1], w] for n in N ]) == next_month_alpha[W1.index(w)]
+    # model += pulp.lpSum([x[n, Tr[-1], 'dA'] for n in N]) == next_month_alpha[W1.index('dA')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'dM'] for n in N]) == next_month_alpha[W1.index('dM')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'dC'] for n in N]) == next_month_alpha[W1.index('dC')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'dF'] for n in N]) == next_month_alpha[W1.index('dF')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'nA'] for n in N]) == next_month_alpha[W1.index('nA')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'nM'] for n in N]) == next_month_alpha[W1.index('nM')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'nC'] for n in N]) == next_month_alpha[W1.index('nC')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'nn'] for n in N]) == next_month_alpha[W1.index('nn')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'dW'] for n in N]) == next_month_alpha[W1.index('dW')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'eW'] for n in N]) == next_month_alpha[W1.index('eW')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'do'] for n in N]) == next_month_alpha[W1.index('do')]
+    # model += pulp.lpSum([x[n, Tr[-1], 'ho'] for n in N]) == next_month_alpha[W1.index('ho')]
     # 次月に勤務希望がない場合は空(empty)とする
     model += pulp.lpSum([x[n, Tr[-1], 'emp']] for n in Nr) >= 0
     model += pulp.lpSum([x[n, Tr[-1], 'Ex'] for n in Nr]) == 0
@@ -336,7 +344,6 @@ def calc_schedule():
 # ***********************************************************************
 # 実行
 # ***********************************************************************
-
     print(f'create at {create_date}')
     print(f'calculatin time : {calc_time} s  start....')    
 
@@ -345,9 +352,9 @@ def calc_schedule():
     
     print(pulp.LpStatus[model.status])
 
-# # ***********************************************************************
-# # 出力
-# # ***********************************************************************
+# ***********************************************************************
+# 出力
+# ***********************************************************************
     # 変数をxを出力
     x_list = dat.convert_outcome2list(x, N, Tr, W, invW)
 

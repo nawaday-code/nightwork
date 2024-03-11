@@ -489,7 +489,7 @@ class DatData:
 
     def output_xlist2shiftdat(self, x_list, status):
         basic_date = datetime.strptime(self.configvar['date'], '%Y/%m/%d')
-        with open(os.path.join(self.dat_dir, 'new_shift.dat'), 'w', encoding='utf-8') as f:        
+        with open(os.path.join(self.dat_dir, 'shift.dat'), 'w', encoding='utf-8') as f:        
             f.write(f"#{datetime.now().strftime('%Y/%m/%d %H:%M:%S')},{status}\n")
             for i in range(len(x_list)):
                 uid = x_list[i][0]
