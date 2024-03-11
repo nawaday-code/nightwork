@@ -90,7 +90,7 @@ def calc_schedule():
             'work_on_close': 0.1, \
             'two_consecutive_holidays': 0.1, \
             'three_consecutive_holidays': 0.05, \
-            'request_dayoff': 0.01}
+            'request_dayoff': 0.2}
 
 
 # ***********************************************************************
@@ -135,8 +135,8 @@ def calc_schedule():
     # 休診日に勤務する回数の平均偏差の合計
     total_work_on_close_dev = pulp.LpVariable('total_work_on_close_dev', cat='Continuous')
       
-    # 休日希望が叶わなかった総数
-    total_request_dayoff = pulp.LpVariable('total_request_dayoff', lowBound=0, cat='Continuous')
+    # 休日希望が叶わなった総数
+    total_request_dayoff = pulp.LpVariable('total_request_dayoff', cat='Continuous')
 
 
    
@@ -189,8 +189,7 @@ def calc_schedule():
 # 希望振休がどの程度実現できたか？
     model += -coef['request_dayoff'] * pulp.lpSum([x[n, t, w] for n, t, w in F_request_dayoff]) == total_request_dayoff   # wはすべて'do'となっている
 
-
-
+    
         
     # 日にちtにおける勤務wの必要人数を合わせる
     for t in Tr[:-1]:
@@ -242,6 +241,7 @@ def calc_schedule():
             next_day = t + datetime.timedelta(days=1)
             model += pulp.lpSum([x[n, t, w] for w in W[4:7]]) == x[n, next_day, 'nn']
 
+
     # 次月1日の勤務 -> 夜勤や日勤は次月のため、習熟度の満たしていないスタッフでも入力可能なので、NsでなくNとして計算
     for w in W1:
         model += pulp.lpSum([x[n, T[-1], w] for n in N ]) == next_month_alpha[W1.index(w)]
@@ -262,15 +262,18 @@ def calc_schedule():
     model += pulp.lpSum([x[n, Tr[-1], 'Ex'] for n in Nr]) == 0
 
 
-    # 前月分の勤務を入力
+    # # 前月分の勤務を入力
     for n, t, w in F_previous:
         model += x[n, t, w] == 1
-    # 勤務希望を叶える・・・(16)
+    # # 勤務希望を叶える・・・(16)
     for n, t, w in F_request:    
         model += x[n, t, w] == 1
-    # 次月1日の勤務希望を叶える　-> 実際は次月の勤務作成時に考えるが、当月で夜勤明けにならないようにするため
+    # # 次月1日の勤務希望を叶える　-> 実際は次月の勤務作成時に考えるが、当月で夜勤明けにならないようにするため
     for n, t, w in F_request_next_month:
         model += x[n, t, w] == 1
+    # 振休を希望がかなわなかった場合は、勤務とする
+    for n, t, w in F_request_dayoff:
+        model += x[n, t, w] + x[n, t, 'dW'] + x[n, t, 'nn'] == 1
 
     # 禁止事項
     for n in Nr: 
@@ -283,7 +286,6 @@ def calc_schedule():
         model += pulp.lpSum([x[n, t, 'do'] for t in Tr[:-1]]) == number_of_dayoff
         # 3連続夜勤を禁止する
         for t in Tr:
-            
             j = Tr_dict[t]
             model += x[n, Tr[j-4], 'nn'] + x[n, Tr[j-2], 'nn'] + x[n, Tr[j], 'nn'] <= 2
 
@@ -364,8 +366,10 @@ def calc_schedule():
 
     dat.output_xlist2shiftdat(x_list, pulp.LpStatus[model.status])
 
-
-
+    score = 0
+    for n, t, w in F_request_dayoff:
+        score += x[n, t, w].varValue
+    print(score)
 #     # data = convert_scheduling_data(N, staff, G, Tr, Tclosed, T_dict, W, x)
 #     data = rd.read_outcome(N, Toutput, T_dict, W, x, createDate)
 #     # data = output_scheduling_data(N, Tr, T_dict, W, x)
