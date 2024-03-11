@@ -57,10 +57,7 @@ class DatData:
         self._Nr, self._Gm, self._Core, self._dept_dict = self._read_Nr_Gm_Core()
         self._Nnight, self._Ndaily, self._Ns = self._read_skill()
         self._T_dict, self._T, self._Tr_dict, self._Tr = self._schedule_T()
-        # self._F_previous = self.read_previous_request('previous.dat')
-        # self._F_request = self.read_previous_request('request.dat')
-        # self._F_request_dayoff = self.read_previous_request('request_dayoff.dat')
-        # self._F_request_next_month = self.read_previous_request('request_nextmonth.dat')
+       
         self._previous = self.read_previous_request_('previous.dat')
         self._request = self.read_previous_request_('request.dat')
         self._request_dayoff = self.read_previous_request_('request_dayoff.dat')
@@ -375,37 +372,6 @@ class DatData:
 
         return sorted(_Nnight), sorted(_Ndaily), [sorted(l) for l in _Ns]
 
-    # def read_previous_request(self, filepath):
-    #     data = []
-    #     _F_list = []
-    #     configvar = self.configvar
-    #     dict = self.convert_table
-    #     date = datetime.strptime(configvar['date'], '%Y/%m/%d')
-    #     path = os.path.join(self.dat_dir, filepath)
-    #     with open(path, encoding='utf-8_sig') as f:
-    #         lines = f.readlines()
-
-    #         if not lines or all(line.strip() == '' for line in lines):  # ファイルが空または全てが空文字列の場合
-    #             return _F_list
-            
-    #         for line in lines:
-    #             line = line.strip()
-    #             data.append(list(line.split(',')))
-
-    #         for d in data:
-    #             uid = int(d[0])
-    #             if uid in self._dept_dict.keys():
-    #                 if not self._dept_dict[uid].upper()  in ['AS','ET']:
-    #                     _list = []
-    #                     _list.append(int(d[0]))
-    #                     day = date + timedelta(days=int(d[1]))
-    #                     _list.append(day)
-    #                     work = self.get_key_from_value(dict, int(d[2]))
-    #                     _list.append(self.work2pulp_dict[work])
-    #                     _F_list.append(_list)
-        
-    #     return _F_list                
-
     def read_previous_request_(self, filepath):
         data = []
         _F_list = []
@@ -471,7 +437,7 @@ class DatData:
         return Tclose * required_staffs_on_close / len(list(set(self._Nnight) | set(self._Ndaily)))
 
     def output_x(self, x, N, T, W):
-        with open(os.path.join(self.dat_dir, 'x.dat'), 'w')  as f:
+        with open(os.path.join(self.dat_dir, 'x.dat'), 'w', encoding='utf-8')  as f:
             for n in N:
                 for t in T:
                     for w in W:
@@ -489,14 +455,19 @@ class DatData:
                 value = float(arr[3]) if arr[3] != 'None' else 0.0
                 x[(n, t, w)] = value
         return x
-        
+
+    def output_list(self, x_list, path):
+        with open(os.path.join(self.dat_dir, path), 'w', encoding='utf-8') as f:
+            for n, t, w in x_list:
+                f.write(f"{n},{t},{w}\n")
+
     def convert_outcome2list(self, x, N, Tr, W, invW):
 
         x_list = []
         for n in N:
             for t in Tr:
                 for w in W:
-                    if x[n, t, w] == 1:
+                    if x[n, t, w].varValue > 0.0:
                         if w != 'emp': 
                             shift = []
                             shift.append(n)
@@ -516,15 +487,15 @@ class DatData:
                     break
         return x_list
 
-    def output_xlist2shiftdat(self, x_list):
+    def output_xlist2shiftdat(self, x_list, status):
         basic_date = datetime.strptime(self.configvar['date'], '%Y/%m/%d')
         with open(os.path.join(self.dat_dir, 'new_shift.dat'), 'w', encoding='utf-8') as f:        
+            f.write(f"#{datetime.now().strftime('%Y/%m/%d %H:%M:%S')},{status}\n")
             for i in range(len(x_list)):
                 uid = x_list[i][0]
                 date = (x_list[i][1] - basic_date).days
                 shift = self.convert_table[x_list[i][2]]
                 f.write(f"{uid},{date},{shift}\n")
-
 
     @property
     def Nr(self):
@@ -597,30 +568,46 @@ class DatData:
 
     @property
     def F_previous(self):
-        _f = self._previous
-        for i in range(len(_f)):
-            _f[i][2] = self.work2pulp_dict[_f[i][2]]
+        _f = []
+        for n, t, w in self._previous:
+            row = []
+            row.append(n)
+            row.append(t)
+            row.append(self.work2pulp_dict[w])
+            _f.append(row)
         return _f
 
     @property
     def F_request(self):
-        _f = self._request
-        for i in range(len(_f)):
-            _f[i][2] = self.work2pulp_dict[_f[i][2]]
+        _f = []
+        for n, t, w in self._request:
+            row = []
+            row.append(n)
+            row.append(t)
+            row.append(self.work2pulp_dict[w])
+            _f.append(row)
         return _f
 
     @property
     def F_request_dayoff(self):
-        _f = self._request_dayoff
-        for i in range(len(_f)):
-            _f[i][2] = self.work2pulp_dict[_f[i][2]]
+        _f = []
+        for n, t, w in self._request_dayoff:
+            row = []
+            row.append(n)
+            row.append(t)
+            row.append(self.work2pulp_dict[w])
+            _f.append(row)
         return _f
 
     @property
     def F_request_next_month(self):
-        _f = self._request_next_month
-        for i in range(len(_f)):
-            _f[i][2] = self.work2pulp_dict[_f[i][2]]
+        _f = []
+        for n, t, w in self._request_next_month:
+            row = []
+            row.append(n)
+            row.append(t)
+            row.append(self.work2pulp_dict[w])
+            _f.append(row)
         return _f
     
 

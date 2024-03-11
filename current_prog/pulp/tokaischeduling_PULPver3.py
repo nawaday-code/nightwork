@@ -350,10 +350,12 @@ def calc_schedule():
 # # ***********************************************************************
     # 変数をxを出力
     x_list = dat.convert_outcome2list(x, N, Tr, W, invW)
+
     x_list = dat.rewrite_request(x_list, dat.request)
+
     x_list = dat.rewrite_request(x_list, dat.request_next_month)
-    
-    dat.output_xlist2shiftdat(x_list)
+
+    dat.output_xlist2shiftdat(x_list, pulp.LpStatus[model.status])
 
 
 
