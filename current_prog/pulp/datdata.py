@@ -9,7 +9,7 @@ WORK2PULP_DICT = {'A日':'dA', 'M日':'dM', 'C日':'dC', 'F日':'dF', 'A夜':'nA
         '日':'dW', '勤':'dW', '援':'eW', '張':'eW', 
         'RT':'dW','MR':'dW','TV':'dW','KS':'dW','NM':'dW', 'AG':'dW','XP':'dW',
         'MG':'dW','MT':'dW','CT':'dW','XO':'dW','FR':'dW','NF':'dW','AS':'dW','ET':'dW','半':'dW',
-        '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho', '希':'dW','✕':'dW',
+        '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho', '希':'dW','☓':'dW',
         '例外':'Ex'}
 PULP2WORK_DICT = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'勤','eW':'他','do':'休','ho':'特','Ex':'ダ', 'emp':'空'}
 
@@ -103,6 +103,7 @@ class DatData:
     def _get_work_skills_data(self):
         skill_path = 'skill.dat'
         work_skills = ['ag', 'mr', 'ct', 'fr', 'night', 'daily']
+        work_skills_pulp = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC']
         path = os.path.join(self.dat_dir, skill_path)
 
         with open(path, encoding='utf-8_sig') as f:
@@ -112,11 +113,13 @@ class DatData:
                 arr = line.split(',')
                 uid = int(arr[0])
                 if uid in self.staffs.keys():
-                    i = 1
-                    for skill in work_skills:
-                        self.staffs[uid].work_skill[skill] = int(arr[i])
-                        i += 1
-            
+                    self.staffs[uid].work_skill['dA'] = int(arr[1])*int(arr[6])
+                    self.staffs[uid].work_skill['dM'] = int(arr[2])*int(arr[6])
+                    self.staffs[uid].work_skill['dC'] = int(arr[3])*int(arr[6])
+                    self.staffs[uid].work_skill['dF'] = int(arr[4])*int(arr[6])
+                    self.staffs[uid].work_skill['nA'] = int(arr[1])*int(arr[5])
+                    self.staffs[uid].work_skill['nM'] = int(arr[2])*int(arr[5])
+                    self.staffs[uid].work_skill['nC'] = int(arr[3])*int(arr[5])         
                 
 
     @property
@@ -275,7 +278,7 @@ class DatData:
     def _schedule_T(self):
         T_dict = {}
         Tr_dict = {}
-        T = [];
+        T = []
         Tr = [] 
         first_day_of_month = datetime.strptime(self.configvar['date'], '%Y/%m/%d')
         consecutivework = self.configvar['iota']
@@ -403,20 +406,20 @@ class DatData:
         
         return _F_list  
         
-    def calc_next_month_alpha(self):
+    def calc_alpha_next_month(self):
         
         W = self._W1_list
         work2pulp = self.work2pulp_dict
-        next_month_alpha = [ 0 for _ in range(len(W))]
+        alpha_next_month = [ 0 for _ in range(len(W))]
         
         for n, t, w in self._request_next_month:
             req_work = work2pulp[w]
-            next_month_alpha[W.index(req_work)] += 1
+            alpha_next_month[W.index(req_work)] += 1
         
         #ただし、明けに関しては3名確定
-        next_month_alpha[W.index('nn')] = 3
+        alpha_next_month[W.index('nn')] = 3
 
-        return next_month_alpha
+        return alpha_next_month
 
     def calc_mean_works(self):
         alpha = self.alpha
@@ -497,7 +500,63 @@ class DatData:
                 shift = self.convert_table[x_list[i][2]]
                 f.write(f"{uid},{date},{shift}\n")
 
-    @property
+    def check_dat(self):
+        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'w', encoding='utf-8') as f: 
+            f.write(f"{datetime.now()}.... file check\n")
+
+        self.check_alpha()
+        self.check_skill()
+        self.check_dayoff()
+
+    def check_alpha(self):
+        alpha_mix = []
+        alpha_request = [[ 0 for j in range(len(self.Tr))] for i in range(len(self.W1_list)) ]
+        alpha_next_month = self.calc_alpha_next_month()
+        flg = [True for _ in range(len(self.W1_list))]
+
+        for row, end in zip(self.alpha,alpha_next_month):
+            row.append(end)
+            alpha_mix.append(row)
+
+        for n, t, w in (self.F_request + self.F_request_next_month):
+            alpha_request[self.W1_list.index(w)][self.Tr.index(t)] += 1
+
+        for mix, req, w in zip(alpha_mix, alpha_request, self.W1_list):
+
+            for i, j in zip(mix, req):
+                if i - j < 0:
+                    flg[self.W1_list.index(w)]=False
+                    break
+        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:   
+            f.write(f"\nalapha check ...\n")     
+            for i, pulpvar in zip(range(len(self.W1_list)), self.W1_list):
+                if flg[i]:
+                    f.write(f"{pulpvar} : OK\n")
+                else:
+                    f.write(f"{pulpvar} : NG\n")
+
+    def check_skill(self):
+
+        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
+            f.write(f"\nskill check ...\n")
+            for n, t, w in (self.F_request + self.F_request_next_month):
+                if n in self.staffs.keys() and w.lower() in ['da', 'dm', 'dc', 'df', 'na', 'nm', 'nc']:
+                    if self.staffs[n].work_skill[w] < 1:
+                        f.write(f"{self.staffs[n].staffname} : {t} :{w} -> NG\n")
+
+    def check_dayoff(self):
+        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
+            f.write(f"\ndayoff check ...(休日に休暇がないかチェック)\n")        
+            flg = True
+            for n, t, w in (self.F_request + self.F_request_next_month):
+                if t in self.tokai_calendar:
+                    if w in ['ho']:
+                        f.write(f"{self.staffs[n].staffname} : {t} : {w} -> NG\n")
+                        flg =False
+            if flg:
+                f.write("------>  OK\n")
+
+    @property   
     def Nr(self):
         return self._Nr    
     
@@ -611,8 +670,9 @@ class DatData:
         return _f
     
 
-# datData = DatData()
-
+# d = DatData()
+# # d.check_alpha()
+# d.check_dat()
 # x = datData.read_x()
 
 # print(x)

@@ -18,6 +18,8 @@ def calc_schedule():
     MAXCONSECUTIVEWORKS = 12        #法律上可能な連続勤務日数
     dat = datdata.DatData()
 
+    dat.check_dat()     #.datファイルのチェック
+
     # 変数
     modality_list = dat.modality_list
     invW = dat.pulp2work_dict
@@ -46,7 +48,7 @@ def calc_schedule():
     alpha = dat.alpha
     beta = dat.beta
     gamma = dat.gamma
-    next_month_alpha = dat.calc_next_month_alpha()
+    alpha_next_month = dat.calc_alpha_next_month()
 
     F_previous = dat.F_previous
     F_request = dat.F_request
@@ -244,19 +246,8 @@ def calc_schedule():
 
     # 次月1日の勤務 -> 夜勤や日勤は次月のため、習熟度の満たしていないスタッフでも入力可能なので、NsでなくNとして計算
     for w in W1:
-        model += pulp.lpSum([x[n, T[-1], w] for n in N ]) == next_month_alpha[W1.index(w)]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dA'] for n in N]) == next_month_alpha[W1.index('dA')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dM'] for n in N]) == next_month_alpha[W1.index('dM')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dC'] for n in N]) == next_month_alpha[W1.index('dC')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dF'] for n in N]) == next_month_alpha[W1.index('dF')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'nA'] for n in N]) == next_month_alpha[W1.index('nA')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'nM'] for n in N]) == next_month_alpha[W1.index('nM')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'nC'] for n in N]) == next_month_alpha[W1.index('nC')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'nn'] for n in N]) == next_month_alpha[W1.index('nn')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dW'] for n in N]) == next_month_alpha[W1.index('dW')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'eW'] for n in N]) == next_month_alpha[W1.index('eW')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'do'] for n in N]) == next_month_alpha[W1.index('do')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'ho'] for n in N]) == next_month_alpha[W1.index('ho')]
+        model += pulp.lpSum([x[n, T[-1], w] for n in N ]) == alpha_next_month[W1.index(w)]
+
     # 次月に勤務希望がない場合は空(empty)とする
     model += pulp.lpSum([x[n, Tr[-1], 'emp']] for n in Nr) >= 0
     model += pulp.lpSum([x[n, Tr[-1], 'Ex'] for n in Nr]) == 0

@@ -1,6 +1,7 @@
 {
     "DATA_DIR":"C:\\Users\\hhond\\tokaiwork\\nightwork\\current_prog\\data",
-    "CBC_PATH":"C:\\Users\\hhond\\tokaiwork\\nightwork\\current_prog\\pulp\\cbc.exe"
+    "CBC_PATH":"C:\\Users\\hhond\\tokaiwork\\nightwork\\current_prog\\pulp\\cbc.exe",
+    "LOG_PATH":"C:\\Users\\hhond\\tokaiwork\\nightwork\\current_prog\\data\\pulp_log.txt"
 
 }
 
