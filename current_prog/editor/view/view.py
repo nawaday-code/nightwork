@@ -1,12 +1,11 @@
 import pandas as pd
 import datetime
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QVariant, QSize
-from PyQt5.QtGui import QColor, QResizeEvent, QFont, QStandardItem, QShowEvent
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QVariant, QSize, QPoint
+from PyQt5.QtGui import QColor, QResizeEvent, QFont, QStandardItem, QShowEvent, QCursor
 from PyQt5.QtWidgets import (QTableView, QWidget, QAbstractItemView, 
-                            QGridLayout, QHBoxLayout, QSizePolicy, QAbstractScrollArea, QComboBox,
-                            QStyledItemDelegate, QLabel)
-
+                            QGridLayout, QHBoxLayout, QVBoxLayout, QSizePolicy, QAbstractScrollArea, QComboBox,
+                            QStyledItemDelegate, QLabel, QPushButton, QMenu, QAction)
 from util.dataSender import DataName
 from util.shiftController import ShiftChannel
 from util.kinnmuCount import *
@@ -25,6 +24,37 @@ modalityColors = {'RT':QColor('#99ccff'), 'MR':QColor('#99FFFF'), 'TV':QColor('#
                   'KS':QColor('#99FFFF'), 'NM':QColor('#00FFCC'), 'XP':QColor('#FF9933'), 
                   'CT':QColor('#FFCC66'), 'XO':QColor('#9999FF'), 'AG':QColor('#669933'),
                   'FR':QColor('#F5F5F5'), 'AS':QColor('#D3D3D3'), 'ET':QColor('#A9A9A9')}
+
+class ShiftButtonWidget(QWidget):
+    def __init__(self, view, index):
+        super().__init__()
+
+        self.view = view
+        self.index = index
+
+        shifts = ['休', '勤', 'A日', 'M日', 'C日', 'F日', 'A夜', 'M夜', 'C夜', '明']
+        self.setWindowTitle('勤務')
+        self.setGeometry(100, 100, 50, 250)  # ウィンドウの位置とサイズを設定
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowMinimizeButtonHint & ~Qt.WindowMaximizeButtonHint)
+        buttonlayout = QVBoxLayout(self)
+
+        # ボタンを4行3列に配置
+        for shift in shifts:
+                button = QPushButton(shift)
+                # color = shiftColors[shift]  # shiftColors辞書から色を取得
+                # button.setStyleSheet(f"background-color: {color.name()};")  # 背景色を設定
+                button.clicked.connect(self.onButtonClicked)
+                buttonlayout.addWidget(button)
+    
+    def onButtonClicked(self):
+        button = self.sender()  # クリックされたボタンを取得
+        if button:
+            text = button.text()  # ボタンの表示文字を取得
+            self.view.model().setData(self.index, text, Qt.EditRole)
+        
+        self.close()
+
+
 
 class ShiftTableWidget(QWidget):
     def __init__(self, shiftModel, rowHeaderModel, columnHeaderModel, countModel):
@@ -49,9 +79,14 @@ class ShiftTableWidget(QWidget):
         self.shiftView.horizontalScrollBar().valueChanged.connect(self.SyncHorizontalScrollBar)
         self.shiftView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
         self.shiftView.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.shiftView.setEditTriggers(QAbstractItemView.CurrentChanged)
-        self.shiftView.setItemDelegate(ShiftDelegate())
+        self.shiftView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        # self.shiftView.setItemDelegate(ShiftDelegate())
         self.shiftView.model().dataChanged.connect(self.onDataChanged)
+        self.shiftView.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.shiftView.doubleClicked.connect(lambda:self.onTableDoubleClicked(self.shiftView))
+        self.shiftView.customContextMenuRequested.connect(self.showContextMenu)
+        
+
 
         self.scrollView = BaseView()
         self.scrollView.hide()
@@ -277,6 +312,48 @@ class ShiftTableWidget(QWidget):
         self.columnHeaderView.model().setData(index3,conworkcol,Qt.EditRole)
         self.countView.viewport().update()
         self.columnHeaderView.viewport().update()
+    
+    # ダブルクリックされたテーブルを処理する
+    def onTableDoubleClicked(self, view):
+        
+        # テーブルビューからマウス位置を取得
+        global_pos = QCursor.pos()
+        mouse_pos = view.viewport().mapFromGlobal(global_pos)
+        # マウス位置からセルのインデックスを取得
+        index = view.indexAt(mouse_pos)    
+        # 編集可能なセルか判別
+        flg = view.model().previous_request(index)
+
+        if not index.isValid() or flg:
+            self.buttonform = ShiftButtonWidget(view, index)
+            self.buttonform.setAttribute(Qt.WA_DeleteOnClose)
+            self.buttonform.move(global_pos)
+            self.buttonform.show()           
+
+
+
+    # # 右クリックしたときのイベント設定
+    def showContextMenu(self, pos):
+        view = self.sender()
+        if isinstance(view, QTableView):
+            global_pos = view.mapToGlobal(pos)
+            selectedIndex = view.selectedIndexes()
+            model = view.model()
+            if len(selectedIndex) != 1 or not model.previous_request(selectedIndex[0]) :
+                return None
+            menu = QMenu(self)
+            action = QAction('シフトを変更する')
+            action.triggered.connect(lambda:self.onContextMenuActionTriggered(selectedIndex[0], global_pos))
+            menu.addAction(action)
+            menu.exec_(global_pos)
+    
+    def onContextMenuActionTriggered(self, view, index, pos):
+
+        self.buttonform = ShiftButtonWidget(view, index)
+        self.buttonform.setAttribute(Qt.WA_DeleteOnClose)
+        self.buttonform.move(pos)
+        self.buttonform.show()
+
 
 class BaseView(QTableView):
 
@@ -454,6 +531,7 @@ class ShiftModel(TableModel):
         self._kinmu = shiftCtrlChannel.shiftCtrl.getKinmuForm(DataName.kinmu)
         self._previous = shiftCtrlChannel.shiftCtrl.getKinmuForm(DataName.previous)
         self._request = shiftCtrlChannel.shiftCtrl.getKinmuForm(DataName.request)
+        self._request_dayoff = shiftCtrlChannel.shiftCtrl.getKinmuForm(DataName.request_dayoff)
 
         self.shiftCtrlChannel = shiftCtrlChannel
 
@@ -553,12 +631,16 @@ class ShiftModel(TableModel):
 
         for i in range(len(self._data)):
             for j in range(len(self._data.columns)):
+                    kinmu = self._kinmu.iat[i,j]
+                    request_dayoff = self._request_dayoff.iat[i,j]
                     previous = self._previous.iat[i, j]
                     request = self._request.iat[i, j]
                     if previous is not None:
                         self._textColor.iat[i, j] = QColor('#808080')
                     elif request is not None:
                         self._textColor.iat[i, j] = QColor('#ff0000')
+                    elif kinmu == request_dayoff:
+                        self._textColor.iat[i, j] = QColor('#9400d3')
                     else:
                         self._textColor.iat[i, j] = QColor('#000000')
 
@@ -581,8 +663,12 @@ class ShiftModel(TableModel):
     def previous_request(self, index):
         previous = self._previous.iat[index.row(), index.column()]
         request = self._request.iat[index.row(), index.column()]
+        request_dayoff = self._request_dayoff.iat[index.row(), index.column()]
+        kinmu = self._kinmu.iat[index.row(), index.column()]
+        # 休日希望がかなっている場合は勤務希望として表示
+        req_day = (request_dayoff == kinmu)
 
-        if request is None and previous is None:
+        if request is None and previous is None and not req_day:
 
             return True
         else:

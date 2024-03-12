@@ -13,6 +13,7 @@ from util.dataReader import *
 class DataName(Enum):
     kinmu = auto()
     request = auto()
+    request_dayoff = auto()
     previous = auto()
     DFNrdept = auto()
     RawDFNrdeptcore = auto()
@@ -177,7 +178,15 @@ class DataSender(DataReader):
                 for day, job in person.requestPerDay.items():
                     strday :str = datetime.datetime.strftime(datetime.date(*day[:3]), '%Y-%m-%d')
                     df.at[uid, strday] = job
-                
+
+        elif dataName == DataName.request_dayoff:
+            
+            df = pd.DataFrame(None, columns=self.toHeader_fullspan(), index=self.members.keys())
+            for uid, person in self.members.items():
+                for day, job in person.requestDayoffPerDay.items():
+                    strday :str = datetime.datetime.strftime(datetime.date(*day[:3]), '%Y-%m-%d')
+                    df.at[uid, strday] = job
+                                
             # df = pd.DataFrame({uid: person.requestPerDay for uid,
             #                   person in self.members.items()})
 

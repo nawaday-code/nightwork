@@ -20,6 +20,7 @@ class Person:
     skill:list
     jobPerDay: dict
     requestPerDay: dict
+    requestDayoffPerDay: dict
 
     def __init__(self, staffid: str, name: str) -> None:
         self.staffid = staffid
@@ -29,6 +30,7 @@ class Person:
         self.skill = []
         self.jobPerDay = {}
         self.requestPerDay = {}
+        self.requestDayoffPerDay = {}
 
         
 

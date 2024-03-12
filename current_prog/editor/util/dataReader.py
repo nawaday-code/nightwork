@@ -24,6 +24,8 @@ class DatNames(Enum):
     convertTable = 'converttable.dat'
     shift = 'shift.dat'
     request = 'request.dat'
+    request_dayoff = 'request_dayoff.dat'
+    request_nextmonth = 'request_nextmonth.dat'
     previous = 'previous.dat'
     Nrdeptcore = 'Nrdeptcore.dat'
     skill = 'skill.dat'
@@ -142,9 +144,11 @@ class DataReader(Members):
         self.dat2Member(DatNames.shift, self.now_next_month)
         self.dat2Member(DatNames.previous, self.previous_month)
         self.dat2Member(DatNames.request, self.now_next_month)
+        self.dat2Member(DatNames.request_nextmonth, self.now_next_month)
+        self.dat2Member(DatNames.request_dayoff, self.now_next_month)
         return self
 
-    def dat2Member(self, readDatName: DatNames, month_calendar: list[tuple[int, int, int, int]], datPath=''):
+    def dat2Member(self, readDatName: DatNames, month_calendar: list, datPath=''):
         try:
             readingDat = open(datPath, 'r', encoding='utf-8-sig')
         except FileNotFoundError as ex:
@@ -186,13 +190,18 @@ class DataReader(Members):
                 except KeyError as ex:
                     self.members[int(uid)] = Person(uuid4(), f'dummy{uid}')
                     self.members[int(uid)].jobPerDay[date] = job
-            elif readDatName == DatNames.request:
+            elif readDatName == DatNames.request or readDatName == DatNames.request_nextmonth:
                 try:
                     self.members[int(uid)].requestPerDay[date] = job
                 except KeyError as ex:
                     self.members[int(uid)] = Person(uuid4(), f'dummy{uid}')
                     self.members[int(uid)].requestPerDay[date] = job
-
+            elif readDatName == DatNames.request_dayoff:
+                try:
+                    self.members[int(uid)].requestDayoffPerDay[date] = job
+                except KeyError as ex:
+                    self.members[int(uid)] = Person(uuid4(), f'dummy{uid}')
+                    self.members[int(uid)].requestDayoffPerDay[date] = job                
         readingDat.close()
         
     def readSkill(self, datPath = ''):
