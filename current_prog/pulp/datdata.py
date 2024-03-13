@@ -4,14 +4,14 @@ from dateutil.relativedelta import relativedelta
 import config
 
 
-WORK2PULP_DICT = {'A日':'dA', 'M日':'dM', 'C日':'dC', 'F日':'dF', 'A夜':'nA', 'M夜':'nM', 'C夜':'nC', '明':'nn',
-        'A宿':'nA', 'M宿':'nM', 'C宿':'nC',
-        '日':'dW', '勤':'dW', '援':'eW', '張':'eW', 
-        'RT':'dW','MR':'dW','TV':'dW','KS':'dW','NM':'dW', 'AG':'dW','XP':'dW',
-        'MG':'dW','MT':'dW','CT':'dW','XO':'dW','FR':'dW','NF':'dW','AS':'dW','ET':'dW','半':'dW',
-        '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho', '希':'dW','×':'dW',
-        '例外':'Ex'}
-PULP2WORK_DICT = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'勤','eW':'他','do':'休','ho':'特','Ex':'ダ', 'emp':'空'}
+# WORK2PULP_DICT = {'A日':'dA', 'M日':'dM', 'C日':'dC', 'F日':'dF', 'A夜':'nA', 'M夜':'nM', 'C夜':'nC', '明':'nn',
+#         'A宿':'nA', 'M宿':'nM', 'C宿':'nC',
+#         '日':'dW', '勤':'dW', '援':'eW', '張':'eW', 
+#         'RT':'dW','MR':'dW','TV':'dW','KS':'dW','NM':'dW', 'AG':'dW','XP':'dW',
+#         'MG':'dW','MT':'dW','CT':'dW','XO':'dW','FR':'dW','NF':'dW','AS':'dW','ET':'dW','半':'dW',
+#         '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho', '希':'dW','×':'dW',
+#         '例外':'Ex'}
+# PULP2WORK_DICT = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'勤','eW':'他','do':'休','ho':'特','Ex':'ダ', 'emp':'空'}
 
 class Staff:
     def __init__(self, uid, id, staffname):
@@ -38,8 +38,8 @@ class DatData:
 
         self.dat_dir = config.readSettingJson('DATA_DIR')
         # self.dat_dir = 'C:\\Users\\hhond\\source\\repos\\nightwork\\current_prog\\data'
-        self.work2pulp_dict = WORK2PULP_DICT
-        self.pulp2work_dict = PULP2WORK_DICT
+        # self.work2pulp_dict = WORK2PULP_DICT
+        # self.pulp2work_dict = PULP2WORK_DICT
         # self.pulpvar2num = { 'da':0, 'dm':1, 'dc':2, 'df':3, 'na':4, 'nm':5, 'nc':6, 'nn':7, 'dw':8, 'ew':9, 'do':10, 'ho':11, 'Ex':12, 'em':13 }
         # self.modality2num = {'mr':0, 'tv':1, 'ks':2, 'nm':3, 'ag':4, 'rt':5, 'xp':6, 'ct':7, 'xo':8, 'mg':9, 'mt':10, 'fr':11}
         self._W1_list = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
@@ -53,7 +53,10 @@ class DatData:
         self._get_staff_data()
         self._get_dept_and_modality_skills_data()
         self._get_work_skills_data()
-       
+        self._pulp2work_dict = self._get_pulp2work_dict()
+        self._work2pulp_dict = self._get_work2pulp_dict()
+        self._convert_table = self._get_convert_table()
+
         self._Nr, self._Gm, self._Core, self._dept_dict = self._read_Nr_Gm_Core()
         self._Nnight, self._Ndaily, self._Ns = self._read_skill()
         self._T_dict, self._T, self._Tr_dict, self._Tr = self._schedule_T()
@@ -121,7 +124,36 @@ class DatData:
                     self.staffs[uid].work_skill['nM'] = int(arr[2])*int(arr[5])
                     self.staffs[uid].work_skill['nC'] = int(arr[3])*int(arr[5])         
                 
+    def _get_pulp2work_dict(self, filepath='pulp2work_dict.dat'):
+        dict = {}
+        path = os.path.join(self.dat_dir, filepath)
 
+        with open(path, encoding="utf-8_sig") as f:
+            for line in f:
+                key, value = line.strip().split(',')
+                dict.setdefault(key, value)
+        return dict
+    
+    def _get_work2pulp_dict(self, filepath='work2pulp_dict.dat'):
+        dict = {}
+        path = os.path.join(self.dat_dir, filepath)
+
+        with open(path, encoding="utf-8_sig") as f:
+            for line in f:
+                key, value = line.strip().split(',')
+                dict.setdefault(key, value)
+        return dict    
+        
+    def _get_convert_table(self, filepath='converttable.dat'):
+        dict = {}
+        path = os.path.join(self.dat_dir, filepath)
+
+        with open(path, encoding="utf-8_sig") as f:
+            for line in f:
+                key, value = line.strip().split(',')
+                dict.setdefault(key, int(value))
+        return dict    
+    
     @property
     def modality_list(self):
         return self._modality_list
@@ -147,26 +179,16 @@ class DatData:
         return self._W1_list + self._W2_list + self._W3_list
     
     @property
-    def convert_table(self, filepath='converttable.dat'):
-        dict = {}
-        path = os.path.join(self.dat_dir, filepath)
-
-        with open(path, encoding="utf-8_sig") as f:
-            for line in f:
-                key, value = line.strip().split(',')
-                dict.setdefault(key, int(value))
-        return dict
-
+    def pulp2work_dict(self):
+        return self._pulp2work_dict
+    
     @property
-    def shift2num_dict(self, filepath='converttable.dat'):
-        dict = {}
-        path = os.path.join(self.dat_dir, filepath)
-
-        with open(path, encoding="utf-8_sig") as f:
-            for line in f:
-                key, value = line.strip().split(',')
-                dict.setdefault(key, int(value))
-        return dict
+    def work2pulp_dict(self):
+        return self._work2pulp_dict
+    
+    @property
+    def convert_table(self):
+        return self._convert_table
 
     @property
     def alpha(self, filepath = 'alpha.dat'):
@@ -539,10 +561,15 @@ class DatData:
 
         with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
             f.write(f"\nskill check ...\n")
+            flg = True
             for n, t, w in (self.F_request + self.F_request_next_month):
                 if n in self.staffs.keys() and w.lower() in ['da', 'dm', 'dc', 'df', 'na', 'nm', 'nc']:
                     if self.staffs[n].work_skill[w] < 1:
                         f.write(f"{self.staffs[n].staffname} : {t} :{w} -> NG\n")
+                        flg = False
+            if flg:
+                f.write("------>  OK\n") 
+
 
     def check_dayoff(self):
         with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
@@ -555,6 +582,10 @@ class DatData:
                         flg =False
             if flg:
                 f.write("------>  OK\n")
+    
+    def output_request_dayoff(self, score):
+        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
+            f.write(f"\n振休希望は{len(self._F_request_dayoff)}件中、{score}件達成できました。\n")     
 
     @property   
     def Nr(self):
@@ -671,6 +702,11 @@ class DatData:
     
 
 # d = DatData()
+# print(d.work2pulp_dict)
+# print(d._work2pulp_dict2)
+# print()
+# print(d.pulp2work_dict)
+# print(d._pulp2work_dict2)
 # # d.check_alpha()
 # d.check_dat()
 # x = datData.read_x()

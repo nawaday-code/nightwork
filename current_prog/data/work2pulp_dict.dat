@@ -1,6 +1,6 @@
 A日,dA
 M日,dM
-C日,,dC
+C日,dC
 F日,dF
 A夜,nA
 M夜,nM
@@ -9,7 +9,7 @@ C夜,nC
 A宿,nA
 M宿,nM
 C宿,nC
- 日,dW
+日,dW
 勤,dW
 援,eW
 張,eW

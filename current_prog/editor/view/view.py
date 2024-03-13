@@ -343,7 +343,7 @@ class ShiftTableWidget(QWidget):
                 return None
             menu = QMenu(self)
             action = QAction('シフトを変更する')
-            action.triggered.connect(lambda:self.onContextMenuActionTriggered(selectedIndex[0], global_pos))
+            action.triggered.connect(lambda:self.onContextMenuActionTriggered(selectedIndex[0], selectedIndex[0], global_pos))
             menu.addAction(action)
             menu.exec_(global_pos)
     

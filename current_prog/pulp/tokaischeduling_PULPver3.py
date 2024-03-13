@@ -335,4 +335,4 @@ def calc_schedule():
     score = 0
     for n, t, w in F_request_dayoff:
         score += x[n, t, w].varValue
-    print(score)
+    dat.output_request_dayoff(score)

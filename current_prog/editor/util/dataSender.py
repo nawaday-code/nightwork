@@ -219,10 +219,11 @@ class DataSender(DataReader):
     
     # 日付の配列の中で休みを返す
     def getJapanHolidayDF(self):
-        holidayHandler = JapanHoliday()
+        # holidayHandler = JapanHoliday()
         holiday = []
         for day in self.toHeader_fullspan():
-            if holidayHandler.is_holiday(day):
+            if day in self.tokai_calendar.keys():
+            # if holidayHandler.is_holiday(day):
                 holiday.append(day)
         return holiday
 

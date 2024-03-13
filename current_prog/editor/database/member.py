@@ -37,7 +37,7 @@ class Person:
 
 # @dataclass(slots=True)
 class Members:
-    members: dict[int, Person]
+    members: dict
 
     # 全職員で共通な情報
     # (year, month, day, dayofweek) のtupleにする
@@ -48,6 +48,7 @@ class Members:
     next_month: list
     day_previous_next: list
     now_next_month: list
+    tokai_calendar: dict
 
     def __init__(self):
         self.members = {}
