@@ -262,7 +262,7 @@ class DataSender(DataReader):
 
 
         for uid, person in self.members.items():
-            if uid >= 900:
+            if uid >= 900 or len(person.modalityN) < 1 :
                 continue            
             uidL.append(uid)
             deptL.append(person.dept)
@@ -313,7 +313,7 @@ class DataSender(DataReader):
             [], [], [], [], [], [], []
         for uid, person in self.members.items():
 
-            if uid >= 900:
+            if uid >= 900 or len(person.skill) < 1:
                 continue
             uidL.append(uid)
             agNightL.append(person.skill[0])
