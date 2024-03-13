@@ -1,11 +1,6 @@
-import os
-import csv
 import pulp
 import datetime
-import readdata as rd
-import tokaifunc as tfunc
 import config
-import time
 import datdata 
 
 class PulpScheduling:
@@ -17,6 +12,8 @@ class PulpScheduling:
 def calc_schedule():
     MAXCONSECUTIVEWORKS = 12        #法律上可能な連続勤務日数
     dat = datdata.DatData()
+
+    dat.check_dat()     #.datファイルのチェック
 
     # 変数
     modality_list = dat.modality_list
@@ -46,7 +43,7 @@ def calc_schedule():
     alpha = dat.alpha
     beta = dat.beta
     gamma = dat.gamma
-    next_month_alpha = dat.calc_next_month_alpha()
+    alpha_next_month = dat.calc_alpha_next_month()
 
     F_previous = dat.F_previous
     F_request = dat.F_request
@@ -68,18 +65,13 @@ def calc_schedule():
     
     calc_time = configvar['calctime']
     desired_two_consecutive_holidays = desired_holidays[0] + desired_holidays[1]*2 + desired_holidays[2]*3
-    # default_two_consecutive_holidays = nyu[0] + nyu[1]*2 + nyu[2]*3
     desired_three_consecutive_holidays = desired_holidays[1] + desired_holidays[2]*1
     desired_four_consecutive_holidays = desired_holidays[2]
 
     
     # 夜勤・休日日勤平均回数
     mean_works =dat.calc_mean_works()
-    # mean_works = tfunc.calc_mean_of_night_and_daily(alpha, len(Ndaily), len(Nnight))
-    # 休診日かかる夜勤・日勤平均回数=休診日 * 休診日に必要な人数 / 夜勤・日勤対応スタッフ数
     mean_works_on_close = dat.calc_mean_works_on_close()
-    # mean_works_on_close = len(Tclosed) * REQUIRED_NUM_OF_COLOSED_DAY / len(Nboth)
-    # Tdict, T, Tr, Tclosed, Topened, Toutput = tfunc.make_T(createDate, iota)
  
     coef = {'dummy': 1.0, \
             'work_interval1': 0.4, \
@@ -137,11 +129,6 @@ def calc_schedule():
       
     # 休日希望が叶わなった総数
     total_request_dayoff = pulp.LpVariable('total_request_dayoff', cat='Continuous')
-
-
-   
-    
-
 
 # ***********************************************************************  
 # 目的関数
@@ -201,13 +188,6 @@ def calc_schedule():
             model += pulp.lpSum([x[n, t, w] for n in N]) == alpha[W.index(w)][Tr_dict[t]]
             # 対応可能なスタッフに各勤務「'dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC'」を割り当てる・・・(13)(15)
             model += pulp.lpSum([x[n, t, w] for n in Ns[W.index(w)]]) == alpha[W.index(w)][Tr_dict[t]]
-        # model += pulp.lpSum([x[n, t, 'dA'] for n in Ns[W.index('dA')]]) == alpha[W.index('dA')][Tr_dict[t]]
-        # model += pulp.lpSum([x[n, t, 'dM'] for n in Ns[W.index('dM')]]) == alpha[W.index('dM')][Tr_dict[t]]
-        # model += pulp.lpSum([x[n, t, 'dC'] for n in Ns[W.index('dC')]]) == alpha[W.index('dC')][Tr_dict[t]]
-        # model += pulp.lpSum([x[n, t, 'dF'] for n in Ns[W.index('dF')]]) == alpha[W.index('dF')][Tr_dict[t]]
-        # model += pulp.lpSum([x[n, t, 'nA'] for n in Ns[W.index('nA')]]) == alpha[W.index('nA')][Tr_dict[t]]
-        # model += pulp.lpSum([x[n, t, 'nM'] for n in Ns[W.index('nM')]]) == alpha[W.index('nM')][Tr_dict[t]]
-        # model += pulp.lpSum([x[n, t, 'nC'] for n in Ns[W.index('nC')]]) == alpha[W.index('nC')][Tr_dict[t]]
         model += pulp.lpSum([x[n, t, 'nn'] for n in N]) == alpha[W.index('nn')][Tr_dict[t]]
         model += pulp.lpSum([x[n, t, 'ho'] for n in N]) == alpha[W.index('ho')][Tr_dict[t]]
         model += pulp.lpSum([x[n, t, 'eW'] for n in N]) == alpha[W.index('eW')][Tr_dict[t]]
@@ -220,12 +200,10 @@ def calc_schedule():
         if t in Tclose:
             # 休診日の日勤は設定人数分を確保する・・・(7)
             model += pulp.lpSum([x[n, t, 'dW'] for n in N]) == alpha[W.index('dW')][Tr_dict[t]]
-            # model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= alpha[W.index('do')][Tr_dict[t]]
             model += pulp.lpSum([x[n, t, 'do'] for n in N]) >= 0
         else:
 
             # 診療日の日勤を設定人数以上で確保する・・・(6)
-            # model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= alpha[W.index('dW')][Tr_dict[t]]   #可読性が高い気がする
             model += pulp.lpSum([x[n, t, 'dW'] for n in N]) >= 0
             model += pulp.lpSum([x[n, t, 'do'] for n in N]) <= alpha[W.index('do')][Tr_dict[t]]
             
@@ -244,19 +222,8 @@ def calc_schedule():
 
     # 次月1日の勤務 -> 夜勤や日勤は次月のため、習熟度の満たしていないスタッフでも入力可能なので、NsでなくNとして計算
     for w in W1:
-        model += pulp.lpSum([x[n, T[-1], w] for n in N ]) == next_month_alpha[W1.index(w)]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dA'] for n in N]) == next_month_alpha[W1.index('dA')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dM'] for n in N]) == next_month_alpha[W1.index('dM')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dC'] for n in N]) == next_month_alpha[W1.index('dC')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dF'] for n in N]) == next_month_alpha[W1.index('dF')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'nA'] for n in N]) == next_month_alpha[W1.index('nA')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'nM'] for n in N]) == next_month_alpha[W1.index('nM')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'nC'] for n in N]) == next_month_alpha[W1.index('nC')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'nn'] for n in N]) == next_month_alpha[W1.index('nn')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'dW'] for n in N]) == next_month_alpha[W1.index('dW')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'eW'] for n in N]) == next_month_alpha[W1.index('eW')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'do'] for n in N]) == next_month_alpha[W1.index('do')]
-    # model += pulp.lpSum([x[n, Tr[-1], 'ho'] for n in N]) == next_month_alpha[W1.index('ho')]
+        model += pulp.lpSum([x[n, T[-1], w] for n in N ]) == alpha_next_month[W1.index(w)]
+
     # 次月に勤務希望がない場合は空(empty)とする
     model += pulp.lpSum([x[n, Tr[-1], 'emp']] for n in Nr) >= 0
     model += pulp.lpSum([x[n, Tr[-1], 'Ex'] for n in Nr]) == 0
@@ -273,7 +240,7 @@ def calc_schedule():
         model += x[n, t, w] == 1
     # 振休を希望がかなわなかった場合は、勤務とする
     for n, t, w in F_request_dayoff:
-        model += x[n, t, w] + x[n, t, 'dW'] + x[n, t, 'nn'] == 1
+        model += x[n, t, w] + x[n, t, 'dW'] == 1
 
     # 禁止事項
     for n in Nr: 
@@ -294,7 +261,6 @@ def calc_schedule():
     # 連休の取得を考慮するのは日勤夜勤対象者のみ→日勤夜勤に入らない人は休診日が休みになるため考慮する必要がない
     for n in Nboth:
         # 1カ月における夜勤・日勤合計回数の上限以下として平均化する・・・(17)
-        # model += pulp.lpSum([x[n, t, w] for t in Tr for w in W[:7]]) <= night_and_dailiy_work_limit
         model += pulp.lpSum([x[n, t, w] for t in Tr[:-1] for w in W[:7]]) == work_all[n]   #各技師の合計夜勤・休日日勤回数
         model += work_all[n] <= night_and_dailiy_work_limit
         # 各技師の合計夜勤・休日日勤回数の平均偏差・・・(32)
@@ -370,115 +336,115 @@ def calc_schedule():
     for n, t, w in F_request_dayoff:
         score += x[n, t, w].varValue
     print(score)
-#     # data = convert_scheduling_data(N, staff, G, Tr, Tclosed, T_dict, W, x)
-#     data = rd.read_outcome(N, Toutput, T_dict, W, x, createDate)
-#     # data = output_scheduling_data(N, Tr, T_dict, W, x)
-#     # xl.output_data(N, staff, G, Tr, Tclosed, T_dict, W, x)
-#     try:
-#         dataDir = config.readSettingJson("DATA_DIR")
-#         outputPath = os.path.join(dataDir,'shift.dat')
-#         with open(outputPath, 'w', encoding='utf-8') as f:
-#             writer = csv.writer(f, lineterminator='\n')
-#             writer.writerow(['#' + datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S') + ',' + pulp.LpStatus[model.status]])
-#             writer.writerows(data)
-#     except FileNotFoundError as e:
-#         print(e)
-#     except csv.Error as e:
-#         print(e)
-#     return pulp.LpStatus[model.status], data
+# #     # data = convert_scheduling_data(N, staff, G, Tr, Tclosed, T_dict, W, x)
+# #     data = rd.read_outcome(N, Toutput, T_dict, W, x, createDate)
+# #     # data = output_scheduling_data(N, Tr, T_dict, W, x)
+# #     # xl.output_data(N, staff, G, Tr, Tclosed, T_dict, W, x)
+# #     try:
+# #         dataDir = config.readSettingJson("DATA_DIR")
+# #         outputPath = os.path.join(dataDir,'shift.dat')
+# #         with open(outputPath, 'w', encoding='utf-8') as f:
+# #             writer = csv.writer(f, lineterminator='\n')
+# #             writer.writerow(['#' + datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S') + ',' + pulp.LpStatus[model.status]])
+# #             writer.writerows(data)
+# #     except FileNotFoundError as e:
+# #         print(e)
+# #     except csv.Error as e:
+# #         print(e)
+# #     return pulp.LpStatus[model.status], data
 
-# 得られた結果に対して、次月1日の編集とその結果をリストに変更する
-def convert_outcome2list(x, N, Tr, W, invW):
+# # 得られた結果に対して、次月1日の編集とその結果をリストに変更する
+# def convert_outcome2list(x, N, Tr, W, invW):
 
-    x_list = []
-    for n in N:
-        for t in Tr:
-            for w in W:
-                if x[n, t, w] == 1:
-                    shift = []
-                    shift.append(n)
-                    shift.append(t)
-                    shift.append(invW[x])
-                    x_list.append(shift)
+#     x_list = []
+#     for n in N:
+#         for t in Tr:
+#             for w in W:
+#                 if x[n, t, w] == 1:
+#                     shift = []
+#                     shift.append(n)
+#                     shift.append(t)
+#                     shift.append(invW[x])
+#                     x_list.append(shift)
 
-    return x_list
+#     return x_list
 
-def next_month_handle(src, request_nextmonth):
+# def next_month_handle(src, request_nextmonth):
 
-    for n, t, w in request_nextmonth:
-        for i in range(len(src)):
-            if src[i][0] == n and src[i][1] == t:
-                src[i][2] = w
-
-
+#     for n, t, w in request_nextmonth:
+#         for i in range(len(src)):
+#             if src[i][0] == n and src[i][1] == t:
+#                 src[i][2] = w
 
 
-def convertConfig(data):
 
-    createDate = datetime.datetime.strptime(data[0][0], '%Y/%m/%d')
-    epsilon = data[1][0]
-    iota = data[2][0]
-    kappa = data[3][0]
-    myu = data[4][0]
-    nyu = []
-    nyu.append(data[5][0]); nyu.append(data[6][0]); nyu.append(data[7][0])
-    rho = data[8][0]
-    lam = []
-    lam.append(data[9][0]); lam.append(data[10][0]); lam.append(data[11][0]); lam.append(data[12][0]); lam.append(data[13][0]) 
+
+# def convertConfig(data):
+
+#     createDate = datetime.datetime.strptime(data[0][0], '%Y/%m/%d')
+#     epsilon = data[1][0]
+#     iota = data[2][0]
+#     kappa = data[3][0]
+#     myu = data[4][0]
+#     nyu = []
+#     nyu.append(data[5][0]); nyu.append(data[6][0]); nyu.append(data[7][0])
+#     rho = data[8][0]
+#     lam = []
+#     lam.append(data[9][0]); lam.append(data[10][0]); lam.append(data[11][0]); lam.append(data[12][0]); lam.append(data[13][0]) 
     
-    return createDate, epsilon, iota, kappa, myu, nyu, rho, lam
+#     return createDate, epsilon, iota, kappa, myu, nyu, rho, lam
 
 
-def output_scheduling_data(N, Tr, T_dict, W, x):
-    # W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
-    # W2 = ['Ex']
-    invW = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'','eW':'他','do':'休','ho':'特','Ex':'ダ'}
-    invDept = ['MR', 'TV', 'HT', 'NM', 'XA', 'RT', 'XP', 'CT', 'XO', 'FR/NF']
-    buf = []
+# def output_scheduling_data(N, Tr, T_dict, W, x):
+#     # W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
+#     # W2 = ['Ex']
+#     invW = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'','eW':'他','do':'休','ho':'特','Ex':'ダ'}
+#     invDept = ['MR', 'TV', 'HT', 'NM', 'XA', 'RT', 'XP', 'CT', 'XO', 'FR/NF']
+#     buf = []
 
-    for n in N:
-        for t in Tr:
-            shift = []
-            for w in W:
-                if x[n, t, w].value():
-                    shift.append(n)
-                    shift.append(T_dict[t])
-                    shift.append(invW[w])
-                    buf.append(shift)
-    return buf                
+#     for n in N:
+#         for t in Tr:
+#             shift = []
+#             for w in W:
+#                 if x[n, t, w].value():
+#                     shift.append(n)
+#                     shift.append(T_dict[t])
+#                     shift.append(invW[w])
+#                     buf.append(shift)
+#     return buf                
 
-def convert_scheduling_data(N, staff, G, Tr, Tclosed, T_dict, W, x):
-    # W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
-    # W2 = ['Ex']
-    invW = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'','eW':'他','do':'休','ho':'特','Ex':'ダ'}
-    invDept = ['MR', 'TV', 'HT', 'NM', 'XA', 'RT', 'XP', 'CT', 'XO', 'FR/NF']
+# def convert_scheduling_data(N, staff, G, Tr, Tclosed, T_dict, W, x):
+#     # W1 = ['dA', 'dM', 'dC', 'dF', 'nA', 'nM', 'nC', 'nn', 'dW', 'eW', 'do', 'ho']
+#     # W2 = ['Ex']
+#     invW = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'','eW':'他','do':'休','ho':'特','Ex':'ダ'}
+#     invDept = ['MR', 'TV', 'HT', 'NM', 'XA', 'RT', 'XP', 'CT', 'XO', 'FR/NF']
 
-    buf = []
-    for n in N:
-        staff_info = []
-        if staff.get(n):
-            staff_info.append(n)
-            staff_info.append(staff[n]['id'])
-            staff_info.append(staff[n]['name'])
-            for m in G:
-                if n in m:
-                    staff_info.append(invDept[G.index(m)])
-                    break
-        else:
-            staff_info.append(n)
-            staff_info.append('')
-            staff_info.append('')
-            staff_info.append('')
+#     buf = []
+#     for n in N:
+#         staff_info = []
+#         if staff.get(n):
+#             staff_info.append(n)
+#             staff_info.append(staff[n]['id'])
+#             staff_info.append(staff[n]['name'])
+#             for m in G:
+#                 if n in m:
+#                     staff_info.append(invDept[G.index(m)])
+#                     break
+#         else:
+#             staff_info.append(n)
+#             staff_info.append('')
+#             staff_info.append('')
+#             staff_info.append('')
 
-        for t in Tr:
-            shift = []
-            for w in W:
-                if x[n, t, w].value():
-                    for i in staff_info:
-                        shift.append(i)
-                    shift.append(T_dict[t])
-                    shift.append(invW[w])
-                    buf.append(shift)
-    return buf
+#         for t in Tr:
+#             shift = []
+#             for w in W:
+#                 if x[n, t, w].value():
+#                     for i in staff_info:
+#                         shift.append(i)
+#                     shift.append(T_dict[t])
+#                     shift.append(invW[w])
+#                     buf.append(shift)
+#     return buf
         
 

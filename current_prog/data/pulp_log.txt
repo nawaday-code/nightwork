@@ -1,0 +1,20 @@
+2024-03-12 13:33:52.696418.... file check
+
+alapha check ...
+dA : OK
+dM : OK
+dC : OK
+dF : OK
+nA : OK
+nM : OK
+nC : OK
+nn : OK
+dW : OK
+eW : OK
+do : OK
+ho : OK
+
+skill check ...
+
+dayoff check ...(休日に休暇がないかチェック)
+------>  OK
