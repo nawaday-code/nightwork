@@ -9,7 +9,7 @@ WORK2PULP_DICT = {'A日':'dA', 'M日':'dM', 'C日':'dC', 'F日':'dF', 'A夜':'nA
         '日':'dW', '勤':'dW', '援':'eW', '張':'eW', 
         'RT':'dW','MR':'dW','TV':'dW','KS':'dW','NM':'dW', 'AG':'dW','XP':'dW',
         'MG':'dW','MT':'dW','CT':'dW','XO':'dW','FR':'dW','NF':'dW','AS':'dW','ET':'dW','半':'dW',
-        '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho', '希':'dW','☓':'dW',
+        '休':'do', '振':'do', '年':'ho','夏':'ho', '特':'ho', '希':'dW','×':'dW',
         '例外':'Ex'}
 PULP2WORK_DICT = {'dA':'A日','dM':'M日','dC':'C日','dF':'F日','nA':'A夜','nM':'M夜','nC':'C夜','nn':'明','dW':'勤','eW':'他','do':'休','ho':'特','Ex':'ダ', 'emp':'空'}
 
@@ -24,7 +24,7 @@ class Staff:
 
 class StaffList():
     
-    StaffList: dict[int, Staff]
+    StaffList: dict
 
     def __init__(self) -> None:
         
@@ -32,7 +32,7 @@ class StaffList():
 
 
 class DatData:
-    staffs: dict[int, Staff]
+    staffs: dict
     def __init__(self):
         self.staffs = {}
 

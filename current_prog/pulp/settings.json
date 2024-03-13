@@ -1,7 +1,12 @@
 {
+<<<<<<< HEAD
+    "DATA_DIR":"C:\\kinmu\\new_prg\\nightwork\\current_prog\\data",
+    "CBC_PATH":"C:\\kinmu\\new_prg\\nightwork\\current_prog\\pulp\\cbc.exe"
+=======
     "DATA_DIR":"C:\\Users\\hhond\\tokaiwork\\nightwork\\current_prog\\data",
     "CBC_PATH":"C:\\Users\\hhond\\tokaiwork\\nightwork\\current_prog\\pulp\\cbc.exe",
     "LOG_PATH":"C:\\Users\\hhond\\tokaiwork\\nightwork\\current_prog\\data\\pulp_log.txt"
+>>>>>>> 26c62093dd72c82dc7754fbac1d5214e426fab01
 
 }
 

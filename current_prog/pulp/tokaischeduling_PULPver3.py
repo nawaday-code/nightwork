@@ -240,7 +240,7 @@ def calc_schedule():
         model += x[n, t, w] == 1
     # 振休を希望がかなわなかった場合は、勤務とする
     for n, t, w in F_request_dayoff:
-        model += x[n, t, w] + x[n, t, 'dW'] + x[n, t, 'nn'] == 1
+        model += x[n, t, w] + x[n, t, 'dW'] == 1
 
     # 禁止事項
     for n in Nr: 
