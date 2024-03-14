@@ -37,6 +37,7 @@ class DatData:
         self.staffs = {}
 
         self.dat_dir = config.readSettingJson('DATA_DIR')
+        self.log_dir = config.readSettingJson('LOG_DIR')
         # self.dat_dir = 'C:\\Users\\hhond\\source\\repos\\nightwork\\current_prog\\data'
         # self.work2pulp_dict = WORK2PULP_DICT
         # self.pulp2work_dict = PULP2WORK_DICT
@@ -523,7 +524,7 @@ class DatData:
                 f.write(f"{uid},{date},{shift}\n")
 
     def check_dat(self):
-        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'w', encoding='utf-8') as f: 
+        with open(os.path.join(self.log_dir, 'pulp_log.txt'), 'w', encoding='utf-8') as f: 
             f.write(f"{datetime.now()}.... file check\n")
 
         self.check_alpha()
@@ -549,7 +550,7 @@ class DatData:
                 if i - j < 0:
                     flg[self.W1_list.index(w)]=False
                     break
-        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:   
+        with open(os.path.join(self.log_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:   
             f.write(f"\nalapha check ...\n")     
             for i, pulpvar in zip(range(len(self.W1_list)), self.W1_list):
                 if flg[i]:
@@ -559,7 +560,7 @@ class DatData:
 
     def check_skill(self):
 
-        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
+        with open(os.path.join(self.log_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
             f.write(f"\nskill check ...\n")
             flg = True
             for n, t, w in (self.F_request + self.F_request_next_month):
@@ -572,7 +573,7 @@ class DatData:
 
 
     def check_dayoff(self):
-        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
+        with open(os.path.join(self.log_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
             f.write(f"\ndayoff check ...(休日に休暇がないかチェック)\n")        
             flg = True
             for n, t, w in (self.F_request + self.F_request_next_month):
@@ -584,7 +585,7 @@ class DatData:
                 f.write("------>  OK\n")
     
     def output_request_dayoff(self, score):
-        with open(os.path.join(self.dat_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
+        with open(os.path.join(self.log_dir, 'pulp_log.txt'), 'a', encoding='utf-8') as f:    
             f.write(f"\n振休希望は{len(self._F_request_dayoff)}件中、{score}件達成できました。\n")     
 
     @property   
