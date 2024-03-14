@@ -219,10 +219,11 @@ class DataSender(DataReader):
     
     # 日付の配列の中で休みを返す
     def getJapanHolidayDF(self):
-        holidayHandler = JapanHoliday()
+        # holidayHandler = JapanHoliday()
         holiday = []
         for day in self.toHeader_fullspan():
-            if holidayHandler.is_holiday(day):
+            if day in self.tokai_calendar.keys():
+            # if holidayHandler.is_holiday(day):
                 holiday.append(day)
         return holiday
 
@@ -261,7 +262,7 @@ class DataSender(DataReader):
 
 
         for uid, person in self.members.items():
-            if uid >= 900:
+            if uid >= 900 or len(person.modalityN) < 1 :
                 continue            
             uidL.append(uid)
             deptL.append(person.dept)
@@ -312,7 +313,7 @@ class DataSender(DataReader):
             [], [], [], [], [], [], []
         for uid, person in self.members.items():
 
-            if uid >= 900:
+            if uid >= 900 or len(person.skill) < 1:
                 continue
             uidL.append(uid)
             agNightL.append(person.skill[0])

@@ -7,4 +7,4 @@ rho,5
 epsilon,4
 lambda,5,3,1,0.1,0.3
 calctime,1500
-db,X:\{IX0056}勤務管理\DataBase\tmp\shifttable.accdb
+db,C:\kinmu\tmp\shifttable.accdb
